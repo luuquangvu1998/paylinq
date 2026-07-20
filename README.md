@@ -78,7 +78,7 @@ Single-file static frontend (`index.html`) — vanilla JS + [ethers v6](https://
 - [x] Router contract with onchain payment records
 - [x] "Already paid" detection from contract events
 - [x] Live onchain stats
-- [ ] Merchant dashboard (all received payments, read from events)
+- [x] Merchant dashboard (all received payments, read from events)
 - [ ] EURC support
 - [ ] Mainnet deployment when Arc mainnet launches
 
