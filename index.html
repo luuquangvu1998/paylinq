@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>PayLinq — USDC Payment Links on Arc</title>
 <meta name="description" content="Create shareable USDC payment links and invoices on Arc Testnet. One-click payments, sub-second finality, no backend." />
+<meta property="og:title" content="PayLinq — USDC Payment Links on Arc" />
+<meta property="og:description" content="Create a payment link, share it anywhere. One-click USDC payments with sub-second finality, recorded onchain by a verified Router contract." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://paylinq-beta.vercel.app/" />
+<meta property="og:image" content="https://paylinq-beta.vercel.app/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="PayLinq — USDC Payment Links on Arc" />
+<meta name="twitter:description" content="One-click USDC payments on Arc. Sub-second finality, recorded onchain." />
+<meta name="twitter:image" content="https://paylinq-beta.vercel.app/og.png" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%235b8cff'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M36 12 20 36h10l-2 16 16-24H34l2-16z' fill='%23fff'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -34,7 +43,6 @@
   }
   ::selection{background:rgba(91,140,255,.3)}
 
-  /* ===== layered background ===== */
   .bg-aurora{
     position:fixed;inset:-20% -10% auto;height:70vh;z-index:0;pointer-events:none;
     background:
@@ -57,7 +65,6 @@
 
   .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 20px 80px}
 
-  /* ===== navbar ===== */
   .nav{
     position:sticky;top:0;z-index:50;margin:0 -20px 8px;padding:14px 20px;
     display:flex;align-items:center;justify-content:space-between;
@@ -78,7 +85,6 @@
     padding:3px 8px;border-radius:99px;margin-left:9px;vertical-align:2px;
   }
 
-  /* ===== buttons ===== */
   .btn{
     position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
     background:linear-gradient(180deg,#6a97ff,#5079f0);
@@ -102,7 +108,6 @@
   .btn.ghost{background:transparent;border:none;color:var(--text-2);box-shadow:none;padding:8px 10px;font-weight:500}
   .btn.ghost:hover{color:var(--text);filter:none;transform:none;box-shadow:none}
 
-  /* ===== hero ===== */
   .hero{text-align:center;padding:52px 0 36px;animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
   .hero-badge{
     display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500;color:var(--text-2);
@@ -121,9 +126,8 @@
   }
   @keyframes shimmer{to{background-position:-200% 0}}
   .hero p{color:var(--text-2);font-size:16.5px;font-weight:450;max-width:480px;margin:0 auto 28px;line-height:1.66}
-  .hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center}
 
-  /* ===== stats band ===== */
   .stats-band{
     display:grid;grid-template-columns:repeat(3,1fr);
     background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
@@ -139,7 +143,6 @@
   @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
-  /* ===== tabs ===== */
   .tabs{
     display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);
     padding:4px;border-radius:13px;margin-bottom:16px;animation:rise .55s .05s both;
@@ -152,7 +155,6 @@
   .tab:hover{color:var(--text-2)}
   .tab.active{background:var(--surface-3);color:var(--text);box-shadow:0 1px 6px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)}
 
-  /* ===== cards ===== */
   .card{
     position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
     padding:30px;margin-bottom:16px;
@@ -166,7 +168,6 @@
   .card h2{font-family:var(--head);font-size:18px;font-weight:600;letter-spacing:-.3px;margin-bottom:5px}
   .sub{color:var(--text-2);font-size:13.5px;font-weight:450;margin-bottom:6px;line-height:1.6}
 
-  /* ===== form ===== */
   .field{margin-top:20px}
   label{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--text-2);margin-bottom:8px;font-weight:600;letter-spacing:.2px}
   label .opt{font-weight:450;font-size:11.5px;color:var(--text-3)}
@@ -188,7 +189,6 @@
   .err-msg{display:none;color:var(--red);font-size:12.5px;margin-top:7px}
   .err-msg.show{display:block;animation:fade .2s}
 
-  /* ===== result ===== */
   .result{display:none;margin-top:24px;border-top:1px solid var(--border);padding-top:24px;animation:rise .4s both}
   .result.show{display:block}
   .result-head{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px;margin-bottom:14px;color:var(--green)}
@@ -206,7 +206,6 @@
   .qr-info .d{color:var(--text-2);font-size:13px;font-weight:450;line-height:1.6;margin-bottom:13px}
   .row{display:flex;gap:10px;flex-wrap:wrap}
 
-  /* ===== how it works ===== */
   .how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:10px 0 16px;animation:rise .55s .14s both}
   .how .step{
     position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
@@ -227,7 +226,6 @@
   .how .t{font-weight:600;font-size:14.5px;margin-bottom:6px;font-family:var(--head);letter-spacing:-.2px}
   .how .d{color:var(--text-2);font-size:12.8px;font-weight:450;line-height:1.6}
 
-  /* ===== wallet chip ===== */
   .wallet-chip{
     display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1px solid var(--border-hi);
     padding:8px 13px;border-radius:11px;font-size:12.5px;cursor:default;animation:fade .3s;
@@ -237,7 +235,6 @@
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .mono{font-family:var(--mono)}
 
-  /* ===== dashboard ===== */
   .dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 8px}
   .stat{
     background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);
@@ -249,7 +246,6 @@
   .dash-loading{text-align:center;color:var(--text-2);font-size:13.5px;padding:24px 0}
   @media (max-width:600px){ .dash-stats{grid-template-columns:1fr 1fr} .dash-stats .stat:last-child{grid-column:1/-1} }
 
-  /* ===== invoice / pay ===== */
   .pay-shell{max-width:460px;margin:46px auto 0;animation:rise .55s cubic-bezier(.2,.8,.2,1) both}
   .invoice-card{
     position:relative;background:var(--surface);border:1px solid var(--border-hi);border-radius:22px;
@@ -313,7 +309,6 @@
   }
   .inv-foot a{color:#8fa9ff;text-decoration:none}
 
-  /* ===== success ===== */
   .success-wrap{display:none;text-align:center;padding:6px 0 2px;animation:rise .4s both}
   .success-wrap.show{display:block}
   .check-ring{width:74px;height:74px;margin:0 auto 14px}
@@ -323,7 +318,6 @@
   .success-wrap .t{font-family:var(--head);font-size:18px;font-weight:600;margin-bottom:4px;letter-spacing:-.3px}
   .success-wrap .d{color:var(--text-2);font-size:13px;margin-bottom:16px}
 
-  /* ===== list items ===== */
   .history-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 2px;border-bottom:1px solid var(--border);font-size:13.5px;animation:fade .3s}
   .history-item:last-child{border-bottom:none}
   .history-item .ico{width:36px;height:36px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;font-size:15px;border:1px solid var(--border)}
@@ -334,7 +328,6 @@
   .empty{color:var(--text-2);font-size:14px;text-align:center;padding:36px 0;line-height:1.7}
   .empty .big{font-size:26px;display:block;margin-bottom:8px;opacity:.7}
 
-  /* ===== toast ===== */
   #toasts{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99;display:flex;flex-direction:column;gap:9px;align-items:center;width:max-content;max-width:92vw}
   .toast{
     background:#151b2b;border:1px solid var(--border-hi);color:var(--text);
@@ -349,7 +342,6 @@
   @keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.95)}to{opacity:1;transform:none}}
   @keyframes toastOut{to{opacity:0;transform:translateY(8px) scale(.97)}}
 
-  /* ===== footer ===== */
   .footer{margin-top:48px;animation:fade .8s .3s both}
   .footer .links{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;padding-bottom:16px;font-size:13px}
   .footer .links a{color:var(--text-2);text-decoration:none;transition:color .15s}
@@ -395,7 +387,8 @@
       <p>Create a USDC payment link and share it anywhere. One click to pay, settled onchain in under a second — recorded forever by the PayLinq Router contract.</p>
       <div class="hero-ctas">
         <a class="btn" href="#create-card">Create a payment link</a>
-        <a class="btn secondary" href="https://testnet.arcscan.app/address/0x8e9367F710684EaB28258dbeddd39330eAFD3Bb1" target="_blank" rel="noopener">View contract ↗</a>
+        <a class="btn secondary" id="demoBtn" href="#" target="_blank" rel="noopener">Try a demo invoice →</a>
+        <a class="btn ghost" href="https://testnet.arcscan.app/address/0x8e9367F710684EaB28258dbeddd39330eAFD3Bb1" target="_blank" rel="noopener">Verified contract ↗</a>
       </div>
     </div>
 
@@ -598,6 +591,7 @@ const ARC = {
   usdc: "0x3600000000000000000000000000000000000000", // native USDC ERC-20 interface, 6 decimals
   router: "0x8e9367F710684EaB28258dbeddd39330eAFD3Bb1", // PayLinqRouter (verified on ArcScan)
 };
+const DEMO_INVOICE = { to: "0xDc8A26Bcdd214Fc1A7e66a92f1B9C6c2d7643B6a", amt: "5", memo: "Demo invoice — try PayLinq" };
 const ERC20_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)",
   "function balanceOf(address owner) view returns (uint256)",
@@ -830,6 +824,8 @@ function initCreate() {
   $("createView").style.display = "";
   renderHistory();
   loadStats();
+
+  $("demoBtn").href = `${baseUrl()}?to=${DEMO_INVOICE.to}&amt=${DEMO_INVOICE.amt}&memo=${encodeURIComponent(DEMO_INVOICE.memo)}`;
 
   const tabNames = ["create", "dash", "history"];
   document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
