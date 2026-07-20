@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PayLinq — USDC Payment Links on Arc</title>
+<meta name="description" content="Create shareable USDC payment links and invoices on Arc Testnet. One-click payments, sub-second finality, no backend." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234f7cff'/%3E%3Cstop offset='1' stop-color='%237c5cff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M36 12 20 36h10l-2 16 16-24H34l2-16z' fill='%23fff'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#070a12; --bg2:#0b0f1a;
+    --card:rgba(255,255,255,.028); --card-solid:#10141f;
+    --border:rgba(255,255,255,.08); --border-hi:rgba(255,255,255,.14);
+    --text:#eef1f8; --muted:#959db2; --faint:#5d6577;
+    --accent:#4f7cff; --accent2:#7c5cff; --accent-soft:rgba(79,124,255,.13);
+    --green:#34d39b; --green-soft:rgba(52,211,155,.12);
+    --red:#ff5c7a; --red-soft:rgba(255,92,122,.1);
+    --radius:18px; --radius-sm:12px;
+    --shadow:0 24px 60px -24px rgba(0,0,0,.6);
+    --font-head:'Space Grotesk',sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--bg); color:var(--text); min-height:100vh;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  .glow{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0}
+  .glow.g1{width:560px;height:560px;top:-220px;right:-120px;background:radial-gradient(circle,rgba(79,124,255,.16),transparent 65%)}
+  .glow.g2{width:520px;height:520px;bottom:-240px;left:-160px;background:radial-gradient(circle,rgba(124,92,255,.13),transparent 65%)}
+  .grid-bg{
+    position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 75%);
+  }
+  .wrap{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:20px 18px 70px}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:6px 0 30px}
+  .logo{display:flex;align-items:center;gap:11px;font-family:var(--font-head);font-weight:700;font-size:21px;letter-spacing:-.4px}
+  .logo-dot{
+    width:38px;height:38px;border-radius:12px;flex:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 24px -6px rgba(79,124,255,.55);
+  }
+  .logo-dot svg{width:20px;height:20px}
+  .net-tag{font-size:10.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border:1px solid rgba(79,124,255,.28);padding:3px 9px;border-radius:99px;margin-left:10px;vertical-align:3px}
+
+  .btn{
+    position:relative;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;border:none;padding:14px 24px;border-radius:14px;
+    font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;
+    transition:transform .18s cubic-bezier(.2,.8,.3,1.2), box-shadow .2s, opacity .15s;
+    box-shadow:0 10px 26px -8px rgba(79,124,255,.5);
+    text-decoration:none;white-space:nowrap;
+  }
+  .btn:hover{transform:translateY(-1.5px);box-shadow:0 14px 32px -8px rgba(79,124,255,.6)}
+  .btn:active{transform:translateY(0) scale(.985)}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn.secondary{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);box-shadow:none}
+  .btn.secondary:hover{background:rgba(255,255,255,.085);border-color:var(--border-hi);box-shadow:none}
+  .btn.small{padding:9px 15px;font-size:13.5px;border-radius:11px}
+  .btn.full{width:100%}
+  .btn.ghost{background:transparent;border:none;color:var(--muted);box-shadow:none;padding:8px 10px}
+  .btn.ghost:hover{color:var(--text)}
+
+  .hero{text-align:center;padding:26px 0 34px;animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+  .hero h1{
+    font-family:var(--font-head);font-size:clamp(30px,5.4vw,44px);font-weight:700;
+    letter-spacing:-1.4px;line-height:1.12;margin-bottom:14px;
+  }
+  .hero h1 .grad{background:linear-gradient(100deg,#7ea2ff,#a88fff 60%,#7ea2ff);background-size:200%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 6s linear infinite}
+  .hero p{color:var(--muted);font-size:16px;max-width:460px;margin:0 auto 22px;line-height:1.65}
+  .chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:var(--muted);background:rgba(255,255,255,.035);border:1px solid var(--border);padding:7px 13px;border-radius:99px}
+  .chip b{color:var(--text);font-weight:600}
+  .chip .cdot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+  @keyframes shimmer{to{background-position:-200% 0}}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:28px;margin-bottom:16px;backdrop-filter:blur(14px);
+    box-shadow:var(--shadow);animation:rise .55s .08s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .card h2{font-family:var(--font-head);font-size:19px;font-weight:600;letter-spacing:-.3px;margin-bottom:5px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:8px;line-height:1.55}
+
+  .tabs{display:flex;gap:6px;background:rgba(255,255,255,.035);border:1px solid var(--border);padding:5px;border-radius:14px;margin-bottom:18px;animation:rise .55s .04s both}
+  .tab{flex:1;text-align:center;padding:10px 6px;border-radius:10px;color:var(--muted);font-weight:600;font-size:13.5px;cursor:pointer;transition:all .2s;border:none;background:transparent;font-family:'Inter',sans-serif}
+  .tab:hover{color:var(--text)}
+  .tab.active{background:rgba(255,255,255,.07);color:var(--text);box-shadow:0 2px 10px rgba(0,0,0,.25)}
+
+  .field{margin-top:18px}
+  label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:600;letter-spacing:.1px}
+  label .opt{font-weight:400;font-size:11.5px;color:var(--faint)}
+  .input-wrap{position:relative;display:flex;gap:10px}
+  input,textarea{
+    width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius-sm);
+    padding:13px 15px;color:var(--text);font-size:15px;outline:none;font-family:'Inter',sans-serif;
+    transition:border-color .2s, background .2s, box-shadow .2s;
+  }
+  input::placeholder{color:#525b70}
+  input:focus{border-color:rgba(79,124,255,.65);background:rgba(79,124,255,.05);box-shadow:0 0 0 3px rgba(79,124,255,.14)}
+  input.mono{font-family:var(--font-mono);font-size:13.5px}
+  input.invalid{border-color:rgba(255,92,122,.6);box-shadow:0 0 0 3px rgba(255,92,122,.12)}
+  .amt-wrap{position:relative}
+  .amt-wrap input{padding-right:74px;font-size:17px;font-weight:600}
+  .amt-suffix{position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;display:flex;align-items:center;gap:6px}
+  .usdc-ico{width:18px;height:18px;border-radius:50%;background:#2775ca;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+  .err-msg{display:none;color:var(--red);font-size:12.5px;margin-top:7px}
+  .err-msg.show{display:block;animation:fade .2s}
+
+  .result{display:none;margin-top:22px;border-top:1px solid var(--border);padding-top:22px;animation:rise .4s both}
+  .result.show{display:block}
+  .result-head{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14.5px;margin-bottom:14px;color:var(--green)}
+  .link-pill{
+    display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);
+    border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 15px;
+  }
+  .link-pill .url{flex:1;font-family:var(--font-mono);font-size:12.5px;color:#9db4ff;word-break:break-all;line-height:1.5}
+  .qr-zone{display:flex;gap:20px;align-items:center;margin-top:16px;flex-wrap:wrap}
+  .qr-frame{background:#fff;border-radius:14px;padding:9px;line-height:0;box-shadow:0 8px 30px -10px rgba(0,0,0,.5)}
+  .qr-frame img{width:132px;height:132px;display:block;border-radius:6px}
+  .qr-info{flex:1;min-width:180px}
+  .qr-info .t{font-weight:600;font-size:14px;margin-bottom:5px}
+  .qr-info .d{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+
+  .how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px 0 16px;animation:rise .55s .14s both}
+  .how .step{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 18px;transition:border-color .25s, transform .25s}
+  .how .step:hover{border-color:var(--border-hi);transform:translateY(-2px)}
+  .how .n{
+    width:30px;height:30px;border-radius:9px;background:var(--accent-soft);color:var(--accent);
+    font-family:var(--font-head);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;
+  }
+  .how .t{font-weight:600;font-size:14.5px;margin-bottom:5px;font-family:var(--font-head);letter-spacing:-.2px}
+  .how .d{color:var(--muted);font-size:12.8px;line-height:1.55}
+
+  .wallet-chip{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.045);border:1px solid var(--border);padding:9px 14px;border-radius:12px;font-size:13px;cursor:default;animation:fade .3s}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .mono{font-family:var(--font-mono)}
+
+  /* dashboard */
+  .dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 6px}
+  .stat{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center}
+  .stat .v{font-family:var(--font-head);font-size:22px;font-weight:700;letter-spacing:-.5px}
+  .stat .l{color:var(--muted);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+  .dash-empty{color:var(--muted);font-size:14px;text-align:center;padding:26px 0;line-height:1.7}
+  .dash-loading{text-align:center;color:var(--muted);font-size:13.5px;padding:22px 0}
+  @media (max-width:600px){ .dash-stats{grid-template-columns:1fr 1fr} .dash-stats .stat:last-child{grid-column:1/-1} }
+
+  .invoice-card{
+    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.018));
+    border:1px solid var(--border-hi);border-radius:22px;padding:34px 28px;
+    box-shadow:var(--shadow);backdrop-filter:blur(16px);
+    animation:rise .55s cubic-bezier(.2,.8,.2,1) both;position:relative;overflow:hidden;
+  }
+  .invoice-card::before{content:"";position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(158,180,255,.5),transparent)}
+  .inv-top{display:flex;justify-content:center;margin-bottom:18px}
+  .net-pill{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--muted);background:rgba(255,255,255,.045);border:1px solid var(--border);padding:7px 14px;border-radius:99px}
+  .net-pill .cdot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+  .inv-label{text-align:center;color:var(--muted);font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;margin-bottom:6px}
+  .inv-amount{
+    text-align:center;font-family:var(--font-head);font-size:clamp(42px,9vw,58px);
+    font-weight:700;letter-spacing:-2px;line-height:1.05;margin-bottom:2px;
+  }
+  .inv-amount .cur{font-size:20px;letter-spacing:0;color:var(--muted);font-weight:600;margin-left:6px;vertical-align:14px}
+  .inv-to{margin:22px auto 0;max-width:420px;background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 16px;display:flex;align-items:center;gap:12px}
+  .inv-to .lab{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.8px;flex:none}
+  .inv-to .adr{font-family:var(--font-mono);font-size:12.8px;color:var(--text);word-break:break-all;flex:1;line-height:1.5}
+  .copy-ico{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;flex:none;transition:color .15s}
+  .copy-ico:hover{color:var(--text)}
+  .inv-memo{margin:14px auto 0;max-width:420px;text-align:center;background:var(--accent-soft);border:1px solid rgba(79,124,255,.22);color:#c3d2ff;border-radius:var(--radius-sm);padding:12px 16px;font-size:14px;line-height:1.55}
+  .paid-banner{display:none;margin:14px auto 0;max-width:420px;text-align:center;background:var(--green-soft);border:1px solid rgba(52,211,155,.3);color:var(--green);border-radius:var(--radius-sm);padding:11px 16px;font-size:13.5px;line-height:1.6;animation:fade .4s}
+  .paid-banner.show{display:block}
+  .paid-banner a{color:inherit}
+  .router-note{text-align:center;margin-top:18px;font-size:11.5px;color:var(--faint)}
+  .router-note a{color:#8fa8ff;text-decoration:none}
+  .pay-zone{max-width:420px;margin:24px auto 0}
+  .balance{font-size:13px;color:var(--muted);text-align:center;margin-top:12px;min-height:18px}
+  .balance .low{color:var(--red)}
+  .status{margin-top:16px;font-size:14px;text-align:center;display:none;line-height:1.6;animation:fade .3s}
+  .status.show{display:block}
+  .status.ok{color:var(--green)}
+  .status.err{color:var(--red)}
+  .status a{color:#9db4ff;text-decoration:none;border-bottom:1px solid rgba(157,180,255,.35)}
+
+  .success-wrap{display:none;text-align:center;padding:8px 0 4px;animation:rise .4s both}
+  .success-wrap.show{display:block}
+  .check-ring{width:76px;height:76px;margin:0 auto 14px}
+  .check-ring circle{stroke:var(--green);stroke-width:2.5;fill:rgba(52,211,155,.07);stroke-dasharray:220;stroke-dashoffset:220;animation:draw .7s .1s ease forwards}
+  .check-ring path{stroke:var(--green);stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .45s .55s ease forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .success-wrap .t{font-family:var(--font-head);font-size:19px;font-weight:600;margin-bottom:4px}
+  .success-wrap .d{color:var(--muted);font-size:13.5px;margin-bottom:16px}
+
+  .history-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 2px;border-bottom:1px solid var(--border);font-size:14px;animation:fade .3s}
+  .history-item:last-child{border-bottom:none}
+  .history-item .ico{width:36px;height:36px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .history-item .ico.link{background:var(--accent-soft)}
+  .history-item .ico.pay{background:var(--green-soft)}
+  .history-item .body{flex:1;min-width:0}
+  .history-item .meta{color:var(--muted);font-size:12px;margin-top:3px}
+  .empty{color:var(--muted);font-size:14px;text-align:center;padding:34px 0;line-height:1.7}
+  .empty .big{font-size:26px;display:block;margin-bottom:8px;opacity:.7}
+
+  #toasts{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99;display:flex;flex-direction:column;gap:9px;align-items:center;width:max-content;max-width:92vw}
+  .toast{
+    background:#161b28;border:1px solid var(--border-hi);color:var(--text);
+    padding:12px 18px;border-radius:12px;font-size:13.5px;font-weight:500;
+    box-shadow:0 14px 40px -8px rgba(0,0,0,.65);display:flex;align-items:center;gap:9px;
+    animation:toastIn .3s cubic-bezier(.2,.9,.3,1.3) both;max-width:92vw;
+  }
+  .toast.out{animation:toastOut .25s ease both}
+  .toast.ok{border-color:rgba(52,211,155,.35)}
+  .toast.err{border-color:rgba(255,92,122,.4)}
+  @keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.95)}to{opacity:1;transform:none}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(8px) scale(.97)}}
+
+  .footer{text-align:center;color:#68718a;font-size:12.5px;margin-top:38px;line-height:2;animation:fade .8s .3s both}
+  .footer a{color:#8fa8ff;text-decoration:none}
+  .footer a:hover{text-decoration:underline}
+  .spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  @media (max-width:600px){
+    .how{grid-template-columns:1fr}
+    .card{padding:22px 18px}
+    .invoice-card{padding:28px 18px}
+    header{padding-bottom:22px}
+  }
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div><div class="grid-bg"></div>
+
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <div class="logo-dot">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M13.5 2 5 13.5h5L9 22l8.5-11.5h-5l1-8.5z" fill="#fff"/></svg>
+      </div>
+      <span>PayLinq<span class="net-tag">Arc Testnet</span></span>
+    </div>
+    <div id="walletArea">
+      <button class="btn secondary small" id="connectBtn">Connect Wallet</button>
+    </div>
+  </header>
+
+  <!-- ================= CREATE VIEW ================= -->
+  <div id="createView" style="display:none">
+    <div class="hero">
+      <h1>Get paid in USDC,<br/><span class="grad">in under a second.</span></h1>
+      <p>Create a payment link, share it anywhere. Anyone can pay you USDC on Arc with one click — every payment is recorded onchain by the PayLinq Router contract.</p>
+      <div class="chips">
+        <span class="chip"><span class="cdot"></span><b>&lt;1s</b>&nbsp;finality</span>
+        <span class="chip"><span class="usdc-ico">$</span> USDC native gas</span>
+        <span class="chip">🔗 No backend</span>
+        <span class="chip" id="statsChip" style="display:none"></span>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="create">⚡ Create Link</button>
+      <button class="tab" data-tab="dash">📊 Dashboard</button>
+      <button class="tab" data-tab="history">🕘 Activity</button>
+    </div>
+
+    <div class="card" id="tab-create">
+      <h2>New payment link</h2>
+      <div class="sub">Fill in the details — we'll generate a link and QR code you can share.</div>
+
+      <div class="field">
+        <label>Recipient address <span class="opt">where the USDC goes</span></label>
+        <div class="input-wrap">
+          <input id="toInput" class="mono" placeholder="0x…" spellcheck="false" autocomplete="off" />
+          <button class="btn secondary small" id="useMyAddr" title="Use my connected wallet" style="flex:none">Use mine</button>
+        </div>
+        <div class="err-msg" id="toErr">Please enter a valid 0x address.</div>
+      </div>
+
+      <div class="field">
+        <label>Amount</label>
+        <div class="amt-wrap">
+          <input id="amtInput" type="number" min="0" step="0.01" placeholder="10.00" inputmode="decimal" />
+          <span class="amt-suffix"><span class="usdc-ico">$</span>USDC</span>
+        </div>
+        <div class="err-msg" id="amtErr">Enter an amount greater than 0.</div>
+      </div>
+
+      <div class="field">
+        <label>Memo <span class="opt">optional — recorded onchain with the payment</span></label>
+        <input id="memoInput" maxlength="120" placeholder="Invoice #001 — design work" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <button class="btn full" id="genBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M13.5 2 5 13.5h5L9 22l8.5-11.5h-5l1-8.5z" fill="#fff"/></svg>
+          Generate payment link
+        </button>
+      </div>
+
+      <div class="result" id="result">
+        <div class="result-head">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Link ready to share
+        </div>
+        <div class="link-pill">
+          <span class="url" id="linkBox"></span>
+          <button class="copy-ico" id="copyBtn" title="Copy link">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2"/></svg>
+          </button>
+        </div>
+        <div class="qr-zone">
+          <div class="qr-frame"><img id="qrImg" alt="Payment QR code" /></div>
+          <div class="qr-info">
+            <div class="t">Scan &amp; pay</div>
+            <div class="d">Anyone who opens this link sees a clean invoice and pays in one click with their wallet.</div>
+            <div class="row">
+              <button class="btn small" id="copyBtn2">Copy link</button>
+              <button class="btn secondary small" id="openBtn">Preview ↗</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="tab-dash" style="display:none">
+      <h2>Merchant dashboard</h2>
+      <div class="sub">Payments received by your wallet — read live from the Router contract, straight from the blockchain.</div>
+      <div id="dashConnect" style="text-align:center;padding:22px 0">
+        <button class="btn" id="dashConnectBtn">Connect wallet to view</button>
+      </div>
+      <div id="dashBody" style="display:none">
+        <div class="dash-stats">
+          <div class="stat"><div class="v" id="dashTotal">—</div><div class="l">USDC received</div></div>
+          <div class="stat"><div class="v" id="dashCount">—</div><div class="l">Payments</div></div>
+          <div class="stat"><div class="v" id="dashLast">—</div><div class="l">Last payment</div></div>
+        </div>
+        <div id="dashList"></div>
+        <div style="text-align:center;margin-top:14px">
+          <button class="btn secondary small" id="dashRefresh">↻ Refresh</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="tab-history" style="display:none">
+      <h2>Activity</h2>
+      <div class="sub">Links you've created and payments you've sent — stored only in your browser.</div>
+      <div id="historyList"></div>
+    </div>
+
+    <div class="how">
+      <div class="step"><div class="n">1</div><div class="t">Create</div><div class="d">Enter your address, amount and an optional memo. Get a link + QR instantly.</div></div>
+      <div class="step"><div class="n">2</div><div class="t">Share</div><div class="d">Send the link anywhere — chat, email, invoice, or print the QR code.</div></div>
+      <div class="step"><div class="n">3</div><div class="t">Get paid</div><div class="d">Payer clicks once. The Router contract settles &amp; records it onchain in &lt;1s.</div></div>
+    </div>
+  </div>
+
+  <!-- ================= PAY VIEW ================= -->
+  <div id="payView" style="display:none">
+    <div class="invoice-card">
+      <div class="inv-top">
+        <span class="net-pill"><span class="cdot"></span> Arc Testnet · settles in &lt;1s</span>
+      </div>
+      <div class="inv-label">Payment request</div>
+      <div class="inv-amount" id="payAmount">—<span class="cur">USDC</span></div>
+
+      <div class="inv-to">
+        <span class="lab">To</span>
+        <span class="adr" id="payTo">—</span>
+        <button class="copy-ico" id="copyAddrBtn" title="Copy address">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2"/></svg>
+        </button>
+      </div>
+      <div class="inv-memo" id="payMemo" style="display:none"></div>
+      <div class="paid-banner" id="paidBanner"></div>
+
+      <div class="pay-zone">
+        <div class="success-wrap" id="successWrap">
+          <svg class="check-ring" viewBox="0 0 76 76"><circle cx="38" cy="38" r="34"/><path d="M24 39.5 34 49l18-20"/></svg>
+          <div class="t">Payment complete</div>
+          <div class="d" id="successSub">Settled onchain on Arc Testnet.</div>
+          <a class="btn secondary small" target="_blank" id="txLink" href="#">View on ArcScan ↗</a>
+        </div>
+        <button class="btn full" id="payBtn">Connect wallet to pay</button>
+        <div class="balance" id="payBalance"></div>
+        <div class="status" id="payStatus"></div>
+      </div>
+
+      <div class="router-note">
+        Secured &amp; recorded by
+        <a href="https://testnet.arcscan.app/address/0x8e9367F710684EaB28258dbeddd39330eAFD3Bb1" target="_blank" rel="noopener">PayLinqRouter</a>
+        — a verified contract on Arc
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:16px;animation:fade .6s .3s both">
+      <a class="btn ghost" href="#" id="makeOwnBtn">⚡ Create your own payment link with PayLinq</a>
+    </div>
+  </div>
+
+  <div class="footer">
+    Built on <a href="https://docs.arc.io" target="_blank" rel="noopener">Arc</a> — the Layer-1 for programmable money by Circle<br/>
+    <a href="https://faucet.circle.com" target="_blank" rel="noopener">Get testnet USDC</a> ·
+    <a href="https://testnet.arcscan.app" target="_blank" rel="noopener">Explorer</a> ·
+    <a href="https://testnet.arcscan.app/address/0x8e9367F710684EaB28258dbeddd39330eAFD3Bb1" target="_blank" rel="noopener">Router contract</a> ·
+    Chain ID 5042002
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+const ARC = {
+  chainIdHex: "0x4CEF52", // 5042002
+  chainIdBig: 5042002n,
+  name: "Arc Testnet",
+  rpc: "https://rpc.testnet.arc.network",
+  explorer: "https://testnet.arcscan.app",
+  usdc: "0x3600000000000000000000000000000000000000", // native USDC ERC-20 interface, 6 decimals
+  router: "0x8e9367F710684EaB28258dbeddd39330eAFD3Bb1", // PayLinqRouter (verified on ArcScan)
+  routerStartBlock: 52597000, // just before router deployment
+};
+const ERC20_ABI = [
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function balanceOf(address owner) view returns (uint256)",
+];
+const ROUTER_ABI = [
+  "function pay(address recipient, string memo) payable returns (uint256)",
+  "function totalPayments() view returns (uint256)",
+  "function totalVolume() view returns (uint256)",
+  "event PaymentSent(uint256 indexed paymentId, address indexed payer, address indexed recipient, uint256 amount, string memo)",
+];
+
+let provider = null, signer = null, account = null;
+
+const $ = (id) => document.getElementById(id);
+const short = (a) => a ? a.slice(0, 6) + "…" + a.slice(-4) : "";
+const fmt = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 6 });
+const readProvider = () => provider || new ethers.JsonRpcProvider(ARC.rpc);
+
+/* ---------- toast ---------- */
+function toast(msg, type) {
+  const t = document.createElement("div");
+  t.className = "toast" + (type ? " " + type : "");
+  t.innerHTML = (type === "ok" ? "✅ " : type === "err" ? "⚠️ " : "") + msg;
+  $("toasts").appendChild(t);
+  setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 260); }, 2800);
+}
+async function copyText(text, label) {
+  try { await navigator.clipboard.writeText(text); toast(label || "Copied to clipboard", "ok"); }
+  catch { toast("Could not copy — please copy manually", "err"); }
+}
+
+/* ---------- routing ---------- */
+const params = new URLSearchParams(location.search);
+const isPayMode = params.has("to") && params.has("amt");
+const baseUrl = () => location.origin + location.pathname;
+
+/* ---------- wallet ---------- */
+async function ensureArcNetwork(eth) {
+  try {
+    await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC.chainIdHex }] });
+  } catch (e) {
+    const code = e.code ?? e?.data?.originalError?.code;
+    if (code === 4902) {
+      await eth.request({ method: "wallet_addEthereumChain", params: [{
+        chainId: ARC.chainIdHex,
+        chainName: ARC.name,
+        nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+        rpcUrls: [ARC.rpc],
+        blockExplorerUrls: [ARC.explorer],
+      }]});
+    } else { throw e; }
+  }
+}
+
+async function connect() {
+  if (!window.ethereum) {
+    toast('No wallet found — install <a href="https://metamask.io/download/" target="_blank" style="color:#9db4ff">MetaMask</a> first', "err");
+    return false;
+  }
+  await ensureArcNetwork(window.ethereum);
+  provider = new ethers.BrowserProvider(window.ethereum);
+  const accounts = await provider.send("eth_requestAccounts", []);
+  account = ethers.getAddress(accounts[0]);
+  signer = await provider.getSigner();
+  renderWallet();
+  return true;
+}
+
+// Re-check the wallet is on Arc Testnet right before any transaction
+async function ensureReadyToSend() {
+  const net = await provider.getNetwork();
+  if (net.chainId !== ARC.chainIdBig) {
+    await ensureArcNetwork(window.ethereum);
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+  }
+}
+
+function renderWallet() {
+  if (!account) return;
+  $("walletArea").innerHTML =
+    `<div class="wallet-chip" title="${account}"><span class="dot"></span><span class="mono">${short(account)}</span></div>`;
+}
+
+async function getUsdcBalance(addr) {
+  const usdc = new ethers.Contract(ARC.usdc, ERC20_ABI, readProvider());
+  return ethers.formatUnits(await usdc.balanceOf(addr), 6);
+}
+
+/* ---------- history ---------- */
+function loadHistory() { try { return JSON.parse(localStorage.getItem("paylinq_history") || "[]"); } catch { return []; } }
+function saveHistory(l) { localStorage.setItem("paylinq_history", JSON.stringify(l.slice(0, 50))); }
+function addHistory(item) { const l = loadHistory(); l.unshift(item); saveHistory(l); renderHistory(); }
+function renderHistory() {
+  const l = loadHistory(), el = $("historyList");
+  if (!el) return;
+  if (!l.length) {
+    el.innerHTML = '<div class="empty"><span class="big">🌱</span>Nothing here yet.<br/>Create your first payment link to get started.</div>';
+    return;
+  }
+  el.innerHTML = l.map((h, i) => {
+    const when = new Date(h.ts).toLocaleString();
+    const memo = h.memo ? ` · <span style="color:var(--muted)">“${escapeHtml(h.memo)}”</span>` : "";
+    if (h.type === "link") {
+      return `<div class="history-item">
+        <div class="ico link">🔗</div>
+        <div class="body">Link · <b>${fmt(h.amt)} USDC</b> → <span class="mono">${short(h.to)}</span>${memo}
+          <div class="meta">${when}</div></div>
+        <button class="btn secondary small" data-copy="${i}">Copy</button>
+      </div>`;
+    }
+    return `<div class="history-item">
+      <div class="ico pay">✅</div>
+      <div class="body">Paid <b>${fmt(h.amt)} USDC</b> → <span class="mono">${short(h.to)}</span>${memo}
+        <div class="meta">${when}</div></div>
+      <a class="btn secondary small" target="_blank" href="${ARC.explorer}/tx/${h.tx}">Tx ↗</a>
+    </div>`;
+  }).join("");
+  el.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => copyText(loadHistory()[+b.dataset.copy].url, "Link copied"));
+}
+function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+/* ---------- onchain stats (from Router) ---------- */
+async function loadStats() {
+  try {
+    const router = new ethers.Contract(ARC.router, ROUTER_ABI, readProvider());
+    const [count, volume] = await Promise.all([router.totalPayments(), router.totalVolume()]);
+    if (count > 0n) {
+      const vol = Number(ethers.formatUnits(volume, 18));
+      $("statsChip").innerHTML = `⚡ <b>${count.toString()}</b>&nbsp;payments · <b>$${vol.toLocaleString(undefined,{maximumFractionDigits:2})}</b>&nbsp;routed onchain`;
+      $("statsChip").style.display = "";
+    }
+  } catch (e) { console.warn("stats unavailable", e); }
+}
+
+/* ---------- merchant dashboard (reads PaymentSent events) ---------- */
+async function fetchReceivedPayments(addr) {
+  const p = readProvider();
+  const router = new ethers.Contract(ARC.router, ROUTER_ABI, p);
+  const latest = await p.getBlockNumber();
+  const from = Math.max(ARC.routerStartBlock, latest - 900000);
+  const logs = await router.queryFilter(router.filters.PaymentSent(null, null, addr), from, latest);
+  logs.sort((a, b) => b.blockNumber - a.blockNumber);
+  const shown = logs.slice(0, 25);
+  // fetch timestamps for the blocks of shown events
+  const blockNums = [...new Set(shown.map(l => l.blockNumber))];
+  const blocks = await Promise.all(blockNums.map(n => p.getBlock(n).catch(() => null)));
+  const tsByBlock = {};
+  blocks.forEach(b => { if (b) tsByBlock[b.number] = b.timestamp; });
+  return { logs, shown, tsByBlock };
+}
+
+async function loadDashboard() {
+  const list = $("dashList");
+  list.innerHTML = '<div class="dash-loading"><span class="spin" style="border-top-color:#9db4ff"></span>&nbsp; Reading events from the blockchain…</div>';
+  try {
+    const { logs, shown, tsByBlock } = await fetchReceivedPayments(account);
+    let total = 0n;
+    logs.forEach(l => { total += l.args.amount; });
+    $("dashTotal").textContent = "$" + Number(ethers.formatUnits(total, 18)).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    $("dashCount").textContent = logs.length.toString();
+    if (shown.length) {
+      const lastTs = tsByBlock[shown[0].blockNumber];
+      $("dashLast").textContent = lastTs ? timeAgo(lastTs * 1000) : "#" + shown[0].blockNumber;
+    } else {
+      $("dashLast").textContent = "—";
+    }
+    if (!logs.length) {
+      list.innerHTML = '<div class="dash-empty">💤 No payments received yet.<br/>Share a payment link with your address to get started.</div>';
+      return;
+    }
+    list.innerHTML = shown.map(l => {
+      const ts = tsByBlock[l.blockNumber];
+      const when = ts ? new Date(ts * 1000).toLocaleString() : "block #" + l.blockNumber;
+      const memo = l.args.memo ? ` · <span style="color:var(--muted)">“${escapeHtml(l.args.memo)}”</span>` : "";
+      return `<div class="history-item">
+        <div class="ico pay">💰</div>
+        <div class="body">Received <b>${fmt(ethers.formatUnits(l.args.amount, 18))} USDC</b> from <span class="mono">${short(l.args.payer)}</span>${memo}
+          <div class="meta">${when} · payment #${l.args.paymentId}</div></div>
+        <a class="btn secondary small" target="_blank" href="${ARC.explorer}/tx/${l.transactionHash}">Tx ↗</a>
+      </div>`;
+    }).join("") + (logs.length > shown.length ? `<div class="meta" style="text-align:center;padding:10px 0;color:var(--muted);font-size:12px">Showing latest ${shown.length} of ${logs.length}</div>` : "");
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = '<div class="dash-empty">⚠️ Could not load payments right now — please try Refresh in a moment.</div>';
+  }
+}
+
+function timeAgo(ms) {
+  const s = Math.floor((Date.now() - ms) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  return Math.floor(s / 86400) + "d ago";
+}
+
+async function openDashboard() {
+  if (!account) {
+    $("dashConnect").style.display = "";
+    $("dashBody").style.display = "none";
+    return;
+  }
+  $("dashConnect").style.display = "none";
+  $("dashBody").style.display = "";
+  await loadDashboard();
+}
+
+/* ---------- CREATE MODE ---------- */
+function initCreate() {
+  $("createView").style.display = "";
+  renderHistory();
+  loadStats();
+
+  const tabNames = ["create", "dash", "history"];
+  document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    tabNames.forEach(n => { $("tab-" + n).style.display = (t.dataset.tab === n) ? "" : "none"; });
+    if (t.dataset.tab === "dash") openDashboard();
+  });
+
+  $("connectBtn").onclick = () => connect().then(ok => { if (ok && $("tab-dash").style.display !== "none") openDashboard(); }).catch(err => toast(err.shortMessage || err.message, "err"));
+  $("dashConnectBtn").onclick = () => connect().then(ok => { if (ok) openDashboard(); }).catch(err => toast(err.shortMessage || err.message, "err"));
+  $("dashRefresh").onclick = () => loadDashboard();
+
+  $("useMyAddr").onclick = async () => {
+    if (!account) { const ok = await connect().catch(() => false); if (!ok) return; }
+    if (account) { $("toInput").value = account; validateTo(); }
+  };
+
+  const validateTo = () => {
+    const ok = ethers.isAddress($("toInput").value.trim());
+    $("toInput").classList.toggle("invalid", !ok && $("toInput").value.length > 0);
+    $("toErr").classList.toggle("show", !ok && $("toInput").value.length > 0);
+    return ok;
+  };
+  const validateAmt = () => {
+    const v = $("amtInput").value.trim();
+    const ok = v && !isNaN(v) && Number(v) > 0;
+    $("amtInput").classList.toggle("invalid", !ok && v.length > 0);
+    $("amtErr").classList.toggle("show", !ok && v.length > 0);
+    return ok;
+  };
+  $("toInput").addEventListener("input", validateTo);
+  $("amtInput").addEventListener("input", validateAmt);
+
+  $("genBtn").onclick = () => {
+    const to = $("toInput").value.trim();
+    const amt = $("amtInput").value.trim();
+    const memo = $("memoInput").value.trim();
+    if (!validateTo() || !to) { $("toErr").classList.add("show"); $("toInput").focus(); return; }
+    if (!validateAmt() || !amt) { $("amtErr").classList.add("show"); $("amtInput").focus(); return; }
+
+    const url = `${baseUrl()}?to=${to}&amt=${encodeURIComponent(amt)}${memo ? `&memo=${encodeURIComponent(memo)}` : ""}`;
+    $("linkBox").textContent = url;
+    $("qrImg").src = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=6&data=${encodeURIComponent(url)}`;
+    $("result").classList.add("show");
+    $("result").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    $("openBtn").onclick = () => window.open(url, "_blank");
+    $("copyBtn").onclick = () => copyText(url, "Link copied");
+    $("copyBtn2").onclick = () => copyText(url, "Link copied");
+    addHistory({ type: "link", to, amt, memo, url, ts: Date.now() });
+    toast("Payment link created", "ok");
+  };
+}
+
+/* ---------- PAY MODE ---------- */
+function initPay() {
+  $("payView").style.display = "";
+  $("makeOwnBtn").href = baseUrl();
+
+  const to = params.get("to");
+  const amt = params.get("amt");
+  const memo = params.get("memo") || "";
+
+  if (!ethers.isAddress(to) || isNaN(amt) || Number(amt) <= 0) {
+    document.querySelector(".invoice-card").innerHTML =
+      '<div class="empty"><span class="big">⚠️</span>This payment link is invalid or malformed.<br/>Ask the sender for a new one.</div>';
+    return;
+  }
+
+  $("payAmount").innerHTML = `${fmt(amt)}<span class="cur">USDC</span>`;
+  $("payTo").textContent = to;
+  $("copyAddrBtn").onclick = () => copyText(to, "Address copied");
+  if (memo) { $("payMemo").textContent = memo; $("payMemo").style.display = "block"; }
+
+  checkAlreadyPaid(to, amt, memo);
+
+  const btn = $("payBtn"), status = $("payStatus");
+  const setStatus = (html, cls) => { status.className = "status show " + (cls || ""); status.innerHTML = html; };
+  const clearStatus = () => { status.className = "status"; status.innerHTML = ""; };
+
+  $("connectBtn").onclick = () => connect().catch(err => toast(err.shortMessage || err.message, "err"));
+
+  async function refreshBalance() {
+    try {
+      const bal = await getUsdcBalance(account);
+      const low = Number(bal) < Number(amt);
+      $("payBalance").innerHTML =
+        `Your balance: <b>${fmt(Number(bal).toFixed(2))} USDC</b>` +
+        (low ? ` · <span class="low">not enough — <a href="https://faucet.circle.com" target="_blank" style="color:inherit">get testnet USDC</a></span>` : "");
+      return !low;
+    } catch { return true; }
+  }
+
+  btn.onclick = async () => {
+    try {
+      btn.disabled = true;
+      clearStatus();
+
+      if (!account) {
+        btn.innerHTML = '<span class="spin"></span> Connecting…';
+        const ok = await connect();
+        btn.disabled = false;
+        if (!ok) { btn.textContent = "Connect wallet to pay"; return; }
+        btn.textContent = `Pay ${fmt(amt)} USDC`;
+        await refreshBalance();
+        return;
+      }
+
+      if (account.toLowerCase() === to.toLowerCase()) {
+        setStatus("You can't pay your own invoice with the same wallet — switch to a different account in MetaMask.", "err");
+        btn.disabled = false;
+        btn.textContent = `Pay ${fmt(amt)} USDC`;
+        return;
+      }
+
+      btn.innerHTML = '<span class="spin"></span> Checking network…';
+      await ensureReadyToSend();
+
+      btn.innerHTML = '<span class="spin"></span> Confirm in your wallet…';
+      // Route the payment through PayLinqRouter: settles + records it onchain
+      const router = new ethers.Contract(ARC.router, ROUTER_ABI, signer);
+      const tx = await router.pay(to, memo, {
+        value: ethers.parseUnits(String(amt), 18), // native USDC uses 18 decimals
+        gasLimit: 250000n, // explicit: skips gas estimation, which fails on some wallet/RPC combos
+      });
+      btn.innerHTML = '<span class="spin"></span> Settling on Arc…';
+      setStatus('Broadcasting — Arc finality is under a second ⚡');
+      const receipt = await tx.wait();
+
+      // success state
+      btn.style.display = "none";
+      clearStatus();
+      $("txLink").href = `${ARC.explorer}/tx/${receipt.hash}`;
+      $("successSub").textContent = `${fmt(amt)} USDC sent to ${short(to)} via PayLinqRouter`;
+      $("successWrap").classList.add("show");
+      addHistory({ type: "pay", to, amt, memo, tx: receipt.hash, ts: Date.now() });
+      refreshBalance();
+      toast("Payment settled onchain", "ok");
+    } catch (err) {
+      console.error(err);
+      // Dig out the real error message hidden inside ethers' wrapper
+      const deep = err?.info?.error?.message || err?.error?.message || err?.shortMessage || err?.message || "Transaction failed";
+      let show;
+      if (err?.code === "ACTION_REJECTED" || /rejected|denied/i.test(deep)) {
+        show = "Transaction was rejected in your wallet.";
+      } else if (/SelfPayment/i.test(deep)) {
+        show = "You can't pay your own invoice with the same wallet.";
+      } else if (/coalesce/i.test(deep)) {
+        show = "The wallet returned an unexpected error. Please try again — if it keeps happening, open MetaMask, switch to Arc Testnet manually, then retry.";
+      } else if (/insufficient/i.test(deep)) {
+        show = 'Not enough USDC to cover amount + gas. <a href="https://faucet.circle.com" target="_blank">Get testnet USDC</a>';
+      } else {
+        show = escapeHtml(deep.slice(0, 160));
+      }
+      setStatus(show, "err");
+      btn.disabled = false;
+      btn.textContent = account ? `Pay ${fmt(amt)} USDC` : "Connect wallet to pay";
+    }
+  };
+}
+
+/* Check Router events: has this exact invoice (recipient + amount + memo) been paid before? */
+async function checkAlreadyPaid(to, amt, memo) {
+  try {
+    const router = new ethers.Contract(ARC.router, ROUTER_ABI, readProvider());
+    const latest = await readProvider().getBlockNumber();
+    const from = Math.max(ARC.routerStartBlock, latest - 900000); // bounded range for RPC limits
+    const filter = router.filters.PaymentSent(null, null, to);
+    const logs = await router.queryFilter(filter, from, latest);
+    const want = ethers.parseUnits(String(amt), 18);
+    const hit = logs.reverse().find(l => l.args && l.args.amount === want && l.args.memo === memo);
+    if (hit) {
+      const b = $("paidBanner");
+      b.innerHTML = `✅ This invoice was already paid onchain — <a href="${ARC.explorer}/tx/${hit.transactionHash}" target="_blank" rel="noopener">view transaction ↗</a><br/><span style="opacity:.75">You can still pay again if this is a recurring request.</span>`;
+      b.classList.add("show");
+    }
+  } catch (e) { console.warn("paid-check unavailable", e); }
+}
+
+/* ---------- boot ---------- */
+if (isPayMode) initPay(); else initCreate();
+
+if (window.ethereum) {
+  window.ethereum.on?.("accountsChanged", (accs) => {
+    account = accs && accs.length ? ethers.getAddress(accs[0]) : null;
+    if (account) renderWallet(); else location.reload();
+  });
+  window.ethereum.on?.("chainChanged", () => location.reload());
+}
+</script>
+</body>
+</html>
