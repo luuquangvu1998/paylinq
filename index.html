@@ -431,7 +431,6 @@ const ARC = {
   explorer: "https://testnet.arcscan.app",
   usdc: "0x3600000000000000000000000000000000000000", // native USDC ERC-20 interface, 6 decimals
   router: "0x8e9367F710684EaB28258dbeddd39330eAFD3Bb1", // PayLinqRouter (verified on ArcScan)
-  routerStartBlock: 52597000, // just before router deployment
 };
 const ERC20_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)",
@@ -568,53 +567,64 @@ async function loadStats() {
   } catch (e) { console.warn("stats unavailable", e); }
 }
 
-/* ---------- merchant dashboard (reads PaymentSent events) ---------- */
-async function fetchReceivedPayments(addr) {
-  const p = readProvider();
-  const router = new ethers.Contract(ARC.router, ROUTER_ABI, p);
-  const latest = await p.getBlockNumber();
-  const from = Math.max(ARC.routerStartBlock, latest - 900000);
-  const logs = await router.queryFilter(router.filters.PaymentSent(null, null, addr), from, latest);
-  logs.sort((a, b) => b.blockNumber - a.blockNumber);
-  const shown = logs.slice(0, 25);
-  // fetch timestamps for the blocks of shown events
-  const blockNums = [...new Set(shown.map(l => l.blockNumber))];
-  const blocks = await Promise.all(blockNums.map(n => p.getBlock(n).catch(() => null)));
-  const tsByBlock = {};
-  blocks.forEach(b => { if (b) tsByBlock[b.number] = b.timestamp; });
-  return { logs, shown, tsByBlock };
+/* ---------- read PaymentSent events via ArcScan API (no RPC log-range limits) ---------- */
+async function fetchRouterEvents(maxPages = 5) {
+  let url = `${ARC.explorer}/api/v2/addresses/${ARC.router}/logs`;
+  const out = [];
+  for (let i = 0; i < maxPages && url; i++) {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("ArcScan API " + r.status);
+    const j = await r.json();
+    (j.items || []).forEach(it => {
+      if (!it.decoded || it.decoded.method_id !== "f1288517") return; // PaymentSent only
+      const p = {};
+      it.decoded.parameters.forEach(x => { p[x.name] = x.value; });
+      const tsRaw = it.block_timestamp ? it.block_timestamp.replace(/\.\d+Z$/, "Z") : null;
+      out.push({
+        paymentId: p.paymentId,
+        payer: p.payer,
+        recipient: p.recipient,
+        amount: BigInt(p.amount),
+        memo: p.memo || "",
+        tx: it.transaction_hash,
+        ts: tsRaw ? Date.parse(tsRaw) : null,
+        block: it.block_number,
+      });
+    });
+    url = j.next_page_params
+      ? `${ARC.explorer}/api/v2/addresses/${ARC.router}/logs?` + new URLSearchParams(j.next_page_params).toString()
+      : null;
+  }
+  return out; // API returns newest first
 }
 
+/* ---------- merchant dashboard ---------- */
 async function loadDashboard() {
   const list = $("dashList");
   list.innerHTML = '<div class="dash-loading"><span class="spin" style="border-top-color:#9db4ff"></span>&nbsp; Reading events from the blockchain…</div>';
   try {
-    const { logs, shown, tsByBlock } = await fetchReceivedPayments(account);
+    const all = await fetchRouterEvents();
+    const mine = all.filter(e => e.recipient.toLowerCase() === account.toLowerCase());
     let total = 0n;
-    logs.forEach(l => { total += l.args.amount; });
+    mine.forEach(e => { total += e.amount; });
     $("dashTotal").textContent = "$" + Number(ethers.formatUnits(total, 18)).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    $("dashCount").textContent = logs.length.toString();
-    if (shown.length) {
-      const lastTs = tsByBlock[shown[0].blockNumber];
-      $("dashLast").textContent = lastTs ? timeAgo(lastTs * 1000) : "#" + shown[0].blockNumber;
-    } else {
-      $("dashLast").textContent = "—";
-    }
-    if (!logs.length) {
-      list.innerHTML = '<div class="dash-empty">💤 No payments received yet.<br/>Share a payment link with your address to get started.</div>';
+    $("dashCount").textContent = mine.length.toString();
+    $("dashLast").textContent = (mine.length && mine[0].ts) ? timeAgo(mine[0].ts) : "—";
+    if (!mine.length) {
+      list.innerHTML = '<div class="dash-empty">💤 No payments received by this wallet yet.<br/>Share a payment link with your address to get started.</div>';
       return;
     }
-    list.innerHTML = shown.map(l => {
-      const ts = tsByBlock[l.blockNumber];
-      const when = ts ? new Date(ts * 1000).toLocaleString() : "block #" + l.blockNumber;
-      const memo = l.args.memo ? ` · <span style="color:var(--muted)">“${escapeHtml(l.args.memo)}”</span>` : "";
+    const shown = mine.slice(0, 25);
+    list.innerHTML = shown.map(e => {
+      const when = e.ts ? new Date(e.ts).toLocaleString() : "block #" + e.block;
+      const memo = e.memo ? ` · <span style="color:var(--muted)">“${escapeHtml(e.memo)}”</span>` : "";
       return `<div class="history-item">
         <div class="ico pay">💰</div>
-        <div class="body">Received <b>${fmt(ethers.formatUnits(l.args.amount, 18))} USDC</b> from <span class="mono">${short(l.args.payer)}</span>${memo}
-          <div class="meta">${when} · payment #${l.args.paymentId}</div></div>
-        <a class="btn secondary small" target="_blank" href="${ARC.explorer}/tx/${l.transactionHash}">Tx ↗</a>
+        <div class="body">Received <b>${fmt(ethers.formatUnits(e.amount, 18))} USDC</b> from <span class="mono">${short(e.payer)}</span>${memo}
+          <div class="meta">${when} · payment #${e.paymentId}</div></div>
+        <a class="btn secondary small" target="_blank" href="${ARC.explorer}/tx/${e.tx}">Tx ↗</a>
       </div>`;
-    }).join("") + (logs.length > shown.length ? `<div class="meta" style="text-align:center;padding:10px 0;color:var(--muted);font-size:12px">Showing latest ${shown.length} of ${logs.length}</div>` : "");
+    }).join("") + (mine.length > shown.length ? `<div class="meta" style="text-align:center;padding:10px 0;color:var(--muted);font-size:12px">Showing latest ${shown.length} of ${mine.length}</div>` : "");
   } catch (e) {
     console.error(e);
     list.innerHTML = '<div class="dash-empty">⚠️ Could not load payments right now — please try Refresh in a moment.</div>';
@@ -809,16 +819,12 @@ function initPay() {
 /* Check Router events: has this exact invoice (recipient + amount + memo) been paid before? */
 async function checkAlreadyPaid(to, amt, memo) {
   try {
-    const router = new ethers.Contract(ARC.router, ROUTER_ABI, readProvider());
-    const latest = await readProvider().getBlockNumber();
-    const from = Math.max(ARC.routerStartBlock, latest - 900000); // bounded range for RPC limits
-    const filter = router.filters.PaymentSent(null, null, to);
-    const logs = await router.queryFilter(filter, from, latest);
+    const all = await fetchRouterEvents();
     const want = ethers.parseUnits(String(amt), 18);
-    const hit = logs.reverse().find(l => l.args && l.args.amount === want && l.args.memo === memo);
+    const hit = all.find(e => e.recipient.toLowerCase() === to.toLowerCase() && e.amount === want && e.memo === memo);
     if (hit) {
       const b = $("paidBanner");
-      b.innerHTML = `✅ This invoice was already paid onchain — <a href="${ARC.explorer}/tx/${hit.transactionHash}" target="_blank" rel="noopener">view transaction ↗</a><br/><span style="opacity:.75">You can still pay again if this is a recurring request.</span>`;
+      b.innerHTML = `✅ This invoice was already paid onchain — <a href="${ARC.explorer}/tx/${hit.tx}" target="_blank" rel="noopener">view transaction ↗</a><br/><span style="opacity:.75">You can still pay again if this is a recurring request.</span>`;
       b.classList.add("show");
     }
   } catch (e) { console.warn("paid-check unavailable", e); }
