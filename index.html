@@ -289,6 +289,28 @@
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .mono{font-family:var(--mono)}
 
+  /* wallet picker modal */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:98;background:rgba(3,5,10,.72);backdrop-filter:blur(8px);
+    display:flex;align-items:center;justify-content:center;animation:fade .2s;padding:20px;
+  }
+  .modal-card{
+    background:var(--surface);border:1px solid var(--border-hi);border-radius:18px;padding:22px;
+    width:340px;max-width:100%;box-shadow:0 40px 100px -30px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
+    animation:rise .28s cubic-bezier(.2,.9,.3,1.2);
+  }
+  .modal-title{font-family:var(--head);font-weight:600;font-size:16px;margin-bottom:4px}
+  .modal-sub{color:var(--text-3);font-size:12.5px;margin-bottom:16px}
+  .wallet-opt{
+    display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:12px;
+    background:var(--surface-2);border:1px solid var(--border);cursor:pointer;color:var(--text);
+    font-weight:600;font-size:14px;margin-bottom:8px;font-family:'Inter',sans-serif;
+    transition:border-color .15s, background .15s, transform .12s;text-align:left;
+  }
+  .wallet-opt:hover{border-color:rgba(91,140,255,.45);background:var(--surface-3);transform:translateY(-1px)}
+  .wallet-opt img{width:30px;height:30px;border-radius:8px;flex:none}
+  .modal-cancel{width:100%;text-align:center;margin-top:4px}
+
   .dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 8px}
   .stat{
     background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);
@@ -332,6 +354,7 @@
     margin:24px 0 0;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);
     padding:13px 15px;display:flex;align-items:center;gap:12px;box-shadow:inset 0 1px 3px rgba(0,0,0,.2);
   }
+  .inv-to.rc{margin-top:12px}
   .addr-avatar{width:34px;height:34px;border-radius:50%;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 3px 8px -2px rgba(0,0,0,.5)}
   .inv-to .col{flex:1;min-width:0}
   .inv-to .lab{font-size:10px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.9px;margin-bottom:3px}
@@ -361,6 +384,8 @@
     font-size:11px;color:var(--text-3);background:rgba(255,255,255,.014);
   }
   .inv-foot a{color:#8fa9ff;text-decoration:none}
+  .rc-settled{text-align:center;color:var(--green);font-size:13px;font-weight:600;margin-top:8px}
+  .rc-meta{text-align:center;color:var(--text-3);font-size:11.5px;margin-top:14px;font-family:var(--mono)}
 
   .success-wrap{display:none;text-align:center;padding:6px 0 2px;animation:rise .4s both}
   .success-wrap.show{display:block}
@@ -663,7 +688,10 @@
               <svg class="check-ring" viewBox="0 0 76 76"><circle cx="38" cy="38" r="34"/><path d="M24 39.5 34 49l18-20"/></svg>
               <div class="t">Payment complete</div>
               <div class="d" id="successSub">Settled onchain on Arc Testnet.</div>
-              <a class="btn secondary small" target="_blank" id="txLink" href="#">View on ArcScan ↗</a>
+              <div class="row" style="justify-content:center">
+                <a class="btn small" target="_blank" id="receiptLink" href="#">📄 Receipt</a>
+                <a class="btn secondary small" target="_blank" id="txLink" href="#">View on ArcScan ↗</a>
+              </div>
             </div>
             <button class="btn full" id="payBtn">Connect wallet to pay</button>
             <div class="balance" id="payBalance"></div>
@@ -683,6 +711,31 @@
     </div>
   </div>
 
+  <!-- ================= RECEIPT VIEW ================= -->
+  <div id="receiptView" style="display:none">
+    <div class="pay-shell">
+      <div class="invoice-card">
+        <div class="inv-brand">
+          <div class="b-left">
+            <div class="logo-dot"><svg viewBox="0 0 24 24" fill="none"><path d="M13.5 2 5 13.5h5L9 22l8.5-11.5h-5l1-8.5z" fill="#fff"/></svg></div>
+            PayLinq
+          </div>
+          <span class="net-pill">🧾 Onchain receipt</span>
+        </div>
+        <div class="inv-body" id="receiptBody">
+          <div class="dash-loading"><span class="spin" style="border-top-color:#9db8ff"></span>&nbsp; Verifying receipt on the blockchain…</div>
+        </div>
+        <div class="inv-foot">
+          Verified onchain · Recorded by
+          <a href="https://testnet.arcscan.app/address/0x8e9367F710684EaB28258dbeddd39330eAFD3Bb1" target="_blank" rel="noopener">PayLinqRouter</a> on Arc Testnet
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:16px;animation:fade .6s .3s both">
+        <a class="btn ghost" href="#" id="makeOwnBtn2">⚡ Create your own payment link with PayLinq</a>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer">
     <div class="links">
       <a href="https://docs.arc.io" target="_blank" rel="noopener">Arc Docs</a>
@@ -694,6 +747,16 @@
       Built on <a href="https://www.arc.network" target="_blank" rel="noopener">Arc</a> — the Layer-1 for programmable money by Circle · Chain ID 5042002
     </div>
   </footer>
+</div>
+
+<!-- wallet picker modal -->
+<div id="walletModal" class="modal-overlay" style="display:none">
+  <div class="modal-card">
+    <div class="modal-title">Choose a wallet</div>
+    <div class="modal-sub">Several wallets were detected in your browser.</div>
+    <div id="walletList"></div>
+    <button class="btn ghost modal-cancel" id="walletCancel">Cancel</button>
+  </div>
 </div>
 
 <div id="toasts"></div>
@@ -720,7 +783,7 @@ const ROUTER_ABI = [
   "event PaymentSent(uint256 indexed paymentId, address indexed payer, address indexed recipient, uint256 amount, string memo)",
 ];
 
-let provider = null, signer = null, account = null;
+let provider = null, signer = null, account = null, ethProvider = null, eventsAttachedTo = null;
 
 const $ = (id) => document.getElementById(id);
 const short = (a) => a ? a.slice(0, 6) + "…" + a.slice(-4) : "";
@@ -742,8 +805,52 @@ async function copyText(text, label) {
 
 /* ---------- routing ---------- */
 const params = new URLSearchParams(location.search);
-const isPayMode = params.has("to") && params.has("amt");
+const isReceiptMode = params.has("receipt");
+const isPayMode = !isReceiptMode && params.has("to") && params.has("amt");
 const baseUrl = () => location.origin + location.pathname;
+
+/* ---------- EIP-6963 multi-wallet discovery ---------- */
+const discoveredWallets = [];
+window.addEventListener("eip6963:announceProvider", (ev) => {
+  try {
+    const d = ev.detail;
+    if (d?.info?.uuid && !discoveredWallets.some(w => w.info.uuid === d.info.uuid)) {
+      discoveredWallets.push(d);
+    }
+  } catch {}
+});
+window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+// resolves: provider object | null (none installed) | undefined (user cancelled)
+function chooseWalletProvider() {
+  return new Promise((resolve) => {
+    const saved = localStorage.getItem("paylinq_wallet_rdns");
+    if (saved) {
+      const hit = discoveredWallets.find(w => w.info.rdns === saved);
+      if (hit) return resolve(hit.provider);
+    }
+    if (discoveredWallets.length === 0) return resolve(window.ethereum || null);
+    if (discoveredWallets.length === 1) {
+      localStorage.setItem("paylinq_wallet_rdns", discoveredWallets[0].info.rdns);
+      return resolve(discoveredWallets[0].provider);
+    }
+    const list = $("walletList");
+    list.innerHTML = "";
+    discoveredWallets.forEach(w => {
+      const b = document.createElement("button");
+      b.className = "wallet-opt";
+      b.innerHTML = `<img src="${w.info.icon}" alt="" /><span>${escapeHtml(w.info.name)}</span>`;
+      b.onclick = () => {
+        localStorage.setItem("paylinq_wallet_rdns", w.info.rdns);
+        $("walletModal").style.display = "none";
+        resolve(w.provider);
+      };
+      list.appendChild(b);
+    });
+    $("walletCancel").onclick = () => { $("walletModal").style.display = "none"; resolve(undefined); };
+    $("walletModal").style.display = "flex";
+  });
+}
 
 /* ---------- wallet ---------- */
 async function ensureArcNetwork(eth) {
@@ -763,16 +870,30 @@ async function ensureArcNetwork(eth) {
   }
 }
 
+function attachWalletEvents() {
+  if (!ethProvider || eventsAttachedTo === ethProvider) return;
+  eventsAttachedTo = ethProvider;
+  ethProvider.on?.("accountsChanged", (accs) => {
+    account = accs && accs.length ? ethers.getAddress(accs[0]) : null;
+    if (account) renderWallet(); else location.reload();
+  });
+  ethProvider.on?.("chainChanged", () => location.reload());
+}
+
 async function connect() {
-  if (!window.ethereum) {
+  const chosen = await chooseWalletProvider();
+  if (chosen === undefined) return false; // user cancelled the picker
+  if (!chosen) {
     toast('No wallet found — install <a href="https://metamask.io/download/" target="_blank" style="color:#9db8ff">MetaMask</a> first', "err");
     return false;
   }
-  await ensureArcNetwork(window.ethereum);
-  provider = new ethers.BrowserProvider(window.ethereum);
+  ethProvider = chosen;
+  await ensureArcNetwork(ethProvider);
+  provider = new ethers.BrowserProvider(ethProvider);
   const accounts = await provider.send("eth_requestAccounts", []);
   account = ethers.getAddress(accounts[0]);
   signer = await provider.getSigner();
+  attachWalletEvents();
   renderWallet();
   return true;
 }
@@ -781,8 +902,8 @@ async function connect() {
 async function ensureReadyToSend() {
   const net = await provider.getNetwork();
   if (net.chainId !== ARC.chainIdBig) {
-    await ensureArcNetwork(window.ethereum);
-    provider = new ethers.BrowserProvider(window.ethereum);
+    await ensureArcNetwork(ethProvider);
+    provider = new ethers.BrowserProvider(ethProvider);
     signer = await provider.getSigner();
   }
 }
@@ -831,7 +952,7 @@ function renderHistory() {
       <div class="ico pay">✅</div>
       <div class="body">Paid <b>${fmt(h.amt)} USDC</b> → <span class="mono">${short(h.to)}</span>${memo}
         <div class="meta">${when}</div></div>
-      <a class="btn secondary small" target="_blank" href="${ARC.explorer}/tx/${h.tx}">Tx ↗</a>
+      <a class="btn secondary small" target="_blank" href="${baseUrl()}?receipt=${h.tx}">🧾</a>
     </div>`;
   }).join("");
   el.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => copyText(loadHistory()[+b.dataset.copy].url, "Link copied"));
@@ -916,7 +1037,7 @@ async function loadDashboard() {
         <div class="ico pay">💰</div>
         <div class="body">Received <b>${fmt(ethers.formatUnits(e.amount, 18))} USDC</b> from <span class="mono">${short(e.payer)}</span>${memo}
           <div class="meta">${when} · payment #${e.paymentId}</div></div>
-        <a class="btn secondary small" target="_blank" href="${ARC.explorer}/tx/${e.tx}">Tx ↗</a>
+        <a class="btn secondary small" target="_blank" href="${baseUrl()}?receipt=${e.tx}">🧾 Receipt</a>
       </div>`;
     }).join("") + (mine.length > shown.length ? `<div class="meta" style="text-align:center;padding:10px 0;color:var(--text-3);font-size:12px">Showing latest ${shown.length} of ${mine.length}</div>` : "");
   } catch (e) {
@@ -1004,7 +1125,6 @@ function initCreate() {
   };
   ["toInput", "amtInput", "memoInput"].forEach(id => $(id).addEventListener("input", () => {
     updatePreview();
-    // reset inline-pay state when the invoice changes
     const pb = $("payNowBtn");
     if (pb) { pb.disabled = false; pb.innerHTML = "💸 Pay now"; }
     const st = $("payNowStatus");
@@ -1052,7 +1172,7 @@ function initCreate() {
         if (!ok) { btn.disabled = false; btn.innerHTML = "💸 Pay now"; return; }
       }
       if (account.toLowerCase() === to.toLowerCase()) {
-        setSt("This invoice pays your own connected wallet — switch to a different MetaMask account to pay it.", "err");
+        setSt("This invoice pays your own connected wallet — switch to a different account in your wallet to pay it.", "err");
         btn.disabled = false; btn.innerHTML = "💸 Pay now";
         return;
       }
@@ -1066,7 +1186,7 @@ function initCreate() {
       });
       btn.innerHTML = '<span class="spin"></span> Settling on Arc…';
       const receipt = await tx.wait();
-      setSt(`✅ Paid ${fmt(amt)} USDC — <a target="_blank" rel="noopener" href="${ARC.explorer}/tx/${receipt.hash}">view on ArcScan ↗</a>`, "ok");
+      setSt(`✅ Paid ${fmt(amt)} USDC — <a target="_blank" rel="noopener" href="${baseUrl()}?receipt=${receipt.hash}">receipt 🧾</a> · <a target="_blank" rel="noopener" href="${ARC.explorer}/tx/${receipt.hash}">ArcScan ↗</a>`, "ok");
       btn.innerHTML = "Paid ✓";
       addHistory({ type: "pay", to, amt, memo, tx: receipt.hash, ts: Date.now() });
       loadStats();
@@ -1077,6 +1197,7 @@ function initCreate() {
       let show;
       if (err?.code === "ACTION_REJECTED" || /rejected|denied/i.test(deep)) show = "Transaction was rejected in your wallet.";
       else if (/SelfPayment/i.test(deep)) show = "You can't pay your own invoice with the same wallet.";
+      else if (/request limit|-32011/i.test(deep)) show = "Your wallet's network connection is rate-limited right now — wait ~30s and try again.";
       else if (/insufficient/i.test(deep)) show = 'Not enough USDC to cover amount + gas. <a href="https://faucet.circle.com" target="_blank">Get testnet USDC</a>';
       else show = escapeHtml(String(deep).slice(0, 140));
       setSt(show, "err");
@@ -1096,7 +1217,7 @@ function initPay() {
   const memo = params.get("memo") || "";
 
   if (!ethers.isAddress(to) || isNaN(amt) || Number(amt) <= 0) {
-    document.querySelector(".invoice-card").innerHTML =
+    document.querySelector("#payView .invoice-card").innerHTML =
       '<div class="empty"><span class="big">⚠️</span>This payment link is invalid or malformed.<br/>Ask the sender for a new one.</div>';
     return;
   }
@@ -1142,7 +1263,7 @@ function initPay() {
       }
 
       if (account.toLowerCase() === to.toLowerCase()) {
-        setStatus("You can't pay your own invoice with the same wallet — switch to a different account in MetaMask.", "err");
+        setStatus("You can't pay your own invoice with the same wallet — switch to a different account in your wallet.", "err");
         btn.disabled = false;
         btn.textContent = `Pay ${fmt(amt)} USDC`;
         return;
@@ -1166,6 +1287,7 @@ function initPay() {
       btn.style.display = "none";
       clearStatus();
       $("txLink").href = `${ARC.explorer}/tx/${receipt.hash}`;
+      $("receiptLink").href = `${baseUrl()}?receipt=${receipt.hash}`;
       $("successSub").textContent = `${fmt(amt)} USDC sent to ${short(to)} via PayLinqRouter`;
       $("successWrap").classList.add("show");
       addHistory({ type: "pay", to, amt, memo, tx: receipt.hash, ts: Date.now() });
@@ -1180,8 +1302,10 @@ function initPay() {
         show = "Transaction was rejected in your wallet.";
       } else if (/SelfPayment/i.test(deep)) {
         show = "You can't pay your own invoice with the same wallet.";
+      } else if (/request limit|-32011/i.test(deep)) {
+        show = "Your wallet's network connection is rate-limited right now — wait ~30 seconds and try again.";
       } else if (/coalesce/i.test(deep)) {
-        show = "The wallet returned an unexpected error. Please try again — if it keeps happening, open MetaMask, switch to Arc Testnet manually, then retry.";
+        show = "The wallet returned an unexpected error. Please try again — if it keeps happening, switch your wallet to Arc Testnet manually, then retry.";
       } else if (/insufficient/i.test(deep)) {
         show = 'Not enough USDC to cover amount + gas. <a href="https://faucet.circle.com" target="_blank">Get testnet USDC</a>';
       } else {
@@ -1194,6 +1318,50 @@ function initPay() {
   };
 }
 
+/* ---------- RECEIPT MODE ---------- */
+async function initReceipt() {
+  $("receiptView").style.display = "";
+  $("makeOwnBtn2").href = baseUrl();
+  const hash = (params.get("receipt") || "").trim();
+  const body = $("receiptBody");
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+    body.innerHTML = '<div class="empty"><span class="big">⚠️</span>Invalid receipt link.</div>';
+    return;
+  }
+  try {
+    const all = await fetchRouterEvents(10);
+    const e = all.find(x => x.tx.toLowerCase() === hash.toLowerCase());
+    if (!e) {
+      body.innerHTML = `<div class="empty"><span class="big">🔍</span>Receipt not found in recent Router payments.<br/>
+        <a style="color:#8fa9ff" target="_blank" rel="noopener" href="${ARC.explorer}/tx/${hash}">Check the transaction on ArcScan ↗</a></div>`;
+      return;
+    }
+    const when = e.ts ? new Date(e.ts).toLocaleString() : "block #" + e.block;
+    body.innerHTML = `
+      <div class="inv-label">Payment receipt</div>
+      <div class="inv-amount" style="font-size:46px">${fmt(ethers.formatUnits(e.amount, 18))}<span class="cur">USDC</span></div>
+      <div class="rc-settled">✅ Settled onchain · ${when}</div>
+      <div class="inv-to rc">
+        <div class="addr-avatar" style="background:${addrGradient(e.payer)}"></div>
+        <div class="col"><div class="lab">From</div><div class="adr">${e.payer}</div></div>
+      </div>
+      <div class="inv-to rc">
+        <div class="addr-avatar" style="background:${addrGradient(e.recipient)}"></div>
+        <div class="col"><div class="lab">To</div><div class="adr">${e.recipient}</div></div>
+      </div>
+      ${e.memo ? `<div class="inv-memo">${escapeHtml(e.memo)}</div>` : ""}
+      <div class="rc-meta">Payment #${e.paymentId} · Block ${e.block}</div>
+      <div class="row" style="justify-content:center;margin-top:20px">
+        <button class="btn small" id="rcCopy">Copy receipt link</button>
+        <a class="btn secondary small" target="_blank" rel="noopener" href="${ARC.explorer}/tx/${e.tx}">View on ArcScan ↗</a>
+      </div>`;
+    $("rcCopy").onclick = () => copyText(`${baseUrl()}?receipt=${e.tx}`, "Receipt link copied");
+  } catch (err) {
+    console.error(err);
+    body.innerHTML = '<div class="empty"><span class="big">⚠️</span>Could not verify the receipt right now — please reload in a moment.</div>';
+  }
+}
+
 /* Check Router events: has this exact invoice (recipient + amount + memo) been paid before? */
 async function checkAlreadyPaid(to, amt, memo) {
   try {
@@ -1202,22 +1370,16 @@ async function checkAlreadyPaid(to, amt, memo) {
     const hit = all.find(e => e.recipient.toLowerCase() === to.toLowerCase() && e.amount === want && e.memo === memo);
     if (hit) {
       const b = $("paidBanner");
-      b.innerHTML = `✅ This invoice was already paid onchain — <a href="${ARC.explorer}/tx/${hit.tx}" target="_blank" rel="noopener">view transaction ↗</a><br/><span style="opacity:.75">You can still pay again if this is a recurring request.</span>`;
+      b.innerHTML = `✅ This invoice was already paid onchain — <a href="${baseUrl()}?receipt=${hit.tx}" target="_blank" rel="noopener">view receipt 🧾</a><br/><span style="opacity:.75">You can still pay again if this is a recurring request.</span>`;
       b.classList.add("show");
     }
   } catch (e) { console.warn("paid-check unavailable", e); }
 }
 
 /* ---------- boot ---------- */
-if (isPayMode) initPay(); else initCreate();
-
-if (window.ethereum) {
-  window.ethereum.on?.("accountsChanged", (accs) => {
-    account = accs && accs.length ? ethers.getAddress(accs[0]) : null;
-    if (account) renderWallet(); else location.reload();
-  });
-  window.ethereum.on?.("chainChanged", () => location.reload());
-}
+if (isReceiptMode) initReceipt();
+else if (isPayMode) initPay();
+else initCreate();
 </script>
 </body>
 </html>
