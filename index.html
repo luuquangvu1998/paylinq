@@ -65,10 +65,14 @@
 
   .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 20px 80px}
 
+  /* full-bleed sticky navbar: background spans the whole viewport,
+     inner content stays aligned with the 760px column */
   .nav{
-    position:sticky;top:0;z-index:50;margin:0 -20px 8px;padding:14px 20px;
+    position:sticky;top:0;z-index:50;
+    margin:0 calc(50% - 50vw) 8px;
+    padding:14px max(20px, calc(50vw - 360px));
     display:flex;align-items:center;justify-content:space-between;
-    background:rgba(5,7,12,.72);backdrop-filter:blur(16px) saturate(1.4);
+    background:rgba(5,7,12,.78);backdrop-filter:blur(16px) saturate(1.4);
     border-bottom:1px solid rgba(148,163,204,.07);
   }
   .logo{display:flex;align-items:center;gap:10px;font-family:var(--head);font-weight:700;font-size:18.5px;letter-spacing:-.35px}
