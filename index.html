@@ -66,7 +66,6 @@
 
   .wrap{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 28px 80px}
 
-  /* full-bleed sticky navbar */
   .nav{
     position:sticky;top:0;z-index:50;
     margin:0 calc(50% - 50vw) 8px;
@@ -112,7 +111,6 @@
   .btn.ghost{background:transparent;border:none;color:var(--text-2);box-shadow:none;padding:8px 10px;font-weight:500}
   .btn.ghost:hover{color:var(--text);filter:none;transform:none;box-shadow:none}
 
-  /* ===== hero: split layout ===== */
   .hero{
     display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;
     padding:64px 0 30px;animation:rise .6s cubic-bezier(.2,.8,.2,1) both;
@@ -137,12 +135,11 @@
   .hero p{color:var(--text-2);font-size:16.5px;font-weight:450;max-width:460px;margin:0 0 30px;line-height:1.68}
   .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 
-  /* hero visual: floating mock invoice */
   .hero-visual{position:relative;display:flex;justify-content:center;padding:16px 0}
   .mock-card{
     width:330px;background:var(--surface);border:1px solid var(--border-hi);border-radius:20px;
     box-shadow:0 40px 90px -30px rgba(0,0,0,.85), 0 0 60px -20px rgba(91,140,255,.25), inset 0 1px 0 rgba(255,255,255,.06);
-    overflow:hidden;transform:rotate(2.5deg);
+    overflow:hidden;transform:rotate(2.5deg);position:relative;
     animation:float 7s ease-in-out infinite;
   }
   @keyframes float{0%,100%{transform:rotate(2.5deg) translateY(0)}50%{transform:rotate(2.5deg) translateY(-10px)}}
@@ -185,7 +182,6 @@
   @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
-  /* ===== main 2-column zone ===== */
   .main-grid{display:grid;grid-template-columns:1fr 396px;gap:22px;align-items:start}
   .preview-panel{position:sticky;top:84px;animation:rise .6s .12s both}
   .preview-title{
@@ -543,13 +539,15 @@
               <div class="qr-frame"><img id="qrImg" alt="Payment QR code" /></div>
               <div class="qr-info">
                 <div class="t">Scan &amp; pay</div>
-                <div class="d">Anyone who opens this link sees a clean invoice and pays in one click with their wallet.</div>
+                <div class="d">Share the link or QR — or pay this invoice right here without leaving the page.</div>
                 <div class="row">
-                  <button class="btn small" id="copyBtn2">Copy link</button>
+                  <button class="btn small" id="payNowBtn">💸 Pay now</button>
+                  <button class="btn secondary small" id="copyBtn2">Copy link</button>
                   <button class="btn secondary small" id="openBtn">Preview ↗</button>
                 </div>
               </div>
             </div>
+            <div class="status" id="payNowStatus"></div>
           </div>
         </div>
 
@@ -1004,7 +1002,14 @@ function initCreate() {
     $("pvMemo").textContent = memo || "Invoice #001 — design work";
     $("pvMemo").style.opacity = memo ? "1" : ".55";
   };
-  ["toInput", "amtInput", "memoInput"].forEach(id => $(id).addEventListener("input", () => { updatePreview(); }));
+  ["toInput", "amtInput", "memoInput"].forEach(id => $(id).addEventListener("input", () => {
+    updatePreview();
+    // reset inline-pay state when the invoice changes
+    const pb = $("payNowBtn");
+    if (pb) { pb.disabled = false; pb.innerHTML = "💸 Pay now"; }
+    const st = $("payNowStatus");
+    if (st) { st.className = "status"; st.innerHTML = ""; }
+  }));
   $("toInput").addEventListener("input", validateTo);
   $("amtInput").addEventListener("input", validateAmt);
   updatePreview();
@@ -1027,6 +1032,58 @@ function initCreate() {
     addHistory({ type: "link", to, amt, memo, url, ts: Date.now() });
     toast("Payment link created", "ok");
   };
+
+  /* ---- inline pay: pay the invoice right here, no new tab ---- */
+  async function payInline() {
+    const to = $("toInput").value.trim();
+    const amt = $("amtInput").value.trim();
+    const memo = $("memoInput").value.trim();
+    const btn = $("payNowBtn"), st = $("payNowStatus");
+    const setSt = (h, c) => { st.className = "status show " + (c || ""); st.innerHTML = h; };
+    if (!ethers.isAddress(to) || !amt || isNaN(amt) || Number(amt) <= 0) {
+      toast("Fill a valid address and amount first", "err");
+      return;
+    }
+    try {
+      btn.disabled = true;
+      if (!account) {
+        btn.innerHTML = '<span class="spin"></span> Connecting…';
+        const ok = await connect();
+        if (!ok) { btn.disabled = false; btn.innerHTML = "💸 Pay now"; return; }
+      }
+      if (account.toLowerCase() === to.toLowerCase()) {
+        setSt("This invoice pays your own connected wallet — switch to a different MetaMask account to pay it.", "err");
+        btn.disabled = false; btn.innerHTML = "💸 Pay now";
+        return;
+      }
+      btn.innerHTML = '<span class="spin"></span> Checking network…';
+      await ensureReadyToSend();
+      btn.innerHTML = '<span class="spin"></span> Confirm in wallet…';
+      const router = new ethers.Contract(ARC.router, ROUTER_ABI, signer);
+      const tx = await router.pay(to, memo, {
+        value: ethers.parseUnits(String(amt), 18),
+        gasLimit: 250000n,
+      });
+      btn.innerHTML = '<span class="spin"></span> Settling on Arc…';
+      const receipt = await tx.wait();
+      setSt(`✅ Paid ${fmt(amt)} USDC — <a target="_blank" rel="noopener" href="${ARC.explorer}/tx/${receipt.hash}">view on ArcScan ↗</a>`, "ok");
+      btn.innerHTML = "Paid ✓";
+      addHistory({ type: "pay", to, amt, memo, tx: receipt.hash, ts: Date.now() });
+      loadStats();
+      toast("Payment settled onchain", "ok");
+    } catch (err) {
+      console.error(err);
+      const deep = err?.info?.error?.message || err?.error?.message || err?.shortMessage || err?.message || "Transaction failed";
+      let show;
+      if (err?.code === "ACTION_REJECTED" || /rejected|denied/i.test(deep)) show = "Transaction was rejected in your wallet.";
+      else if (/SelfPayment/i.test(deep)) show = "You can't pay your own invoice with the same wallet.";
+      else if (/insufficient/i.test(deep)) show = 'Not enough USDC to cover amount + gas. <a href="https://faucet.circle.com" target="_blank">Get testnet USDC</a>';
+      else show = escapeHtml(String(deep).slice(0, 140));
+      setSt(show, "err");
+      btn.disabled = false; btn.innerHTML = "💸 Pay now";
+    }
+  }
+  $("payNowBtn").onclick = payInline;
 }
 
 /* ---------- PAY MODE ---------- */
