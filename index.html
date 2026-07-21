@@ -33,6 +33,7 @@
     --head:'Space Grotesk',sans-serif;
     --mono:'JetBrains Mono',ui-monospace,monospace;
     --ring:0 0 0 3px rgba(91,140,255,.18);
+    --maxw:1140px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
@@ -44,33 +45,32 @@
   ::selection{background:rgba(91,140,255,.3)}
 
   .bg-aurora{
-    position:fixed;inset:-20% -10% auto;height:70vh;z-index:0;pointer-events:none;
+    position:fixed;inset:-20% -10% auto;height:75vh;z-index:0;pointer-events:none;
     background:
-      radial-gradient(42% 55% at 28% 30%, rgba(91,140,255,.14), transparent 70%),
-      radial-gradient(38% 50% at 72% 22%, rgba(139,92,246,.12), transparent 70%),
-      radial-gradient(30% 45% at 52% 60%, rgba(61,220,151,.05), transparent 70%);
-    filter:blur(40px);animation:aurora 18s ease-in-out infinite alternate;
+      radial-gradient(40% 55% at 22% 30%, rgba(91,140,255,.15), transparent 70%),
+      radial-gradient(38% 50% at 78% 25%, rgba(139,92,246,.13), transparent 70%),
+      radial-gradient(30% 45% at 52% 65%, rgba(61,220,151,.05), transparent 70%);
+    filter:blur(42px);animation:aurora 18s ease-in-out infinite alternate;
   }
   @keyframes aurora{from{transform:translateX(-2%) scale(1)}to{transform:translateX(2%) scale(1.06)}}
   .bg-grid{
     position:fixed;inset:0;z-index:0;pointer-events:none;
     background-image:linear-gradient(rgba(148,163,204,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,204,.05) 1px,transparent 1px);
     background-size:56px 56px;
-    mask-image:radial-gradient(ellipse 80% 55% at 50% 0%,#000 20%,transparent 72%);
+    mask-image:radial-gradient(ellipse 85% 60% at 50% 0%,#000 20%,transparent 75%);
   }
   .bg-noise{
     position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.22;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 20px 80px}
+  .wrap{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 28px 80px}
 
-  /* full-bleed sticky navbar: background spans the whole viewport,
-     inner content stays aligned with the 760px column */
+  /* full-bleed sticky navbar */
   .nav{
     position:sticky;top:0;z-index:50;
     margin:0 calc(50% - 50vw) 8px;
-    padding:14px max(20px, calc(50vw - 360px));
+    padding:14px max(28px, calc(50vw - 542px));
     display:flex;align-items:center;justify-content:space-between;
     background:rgba(5,7,12,.78);backdrop-filter:blur(16px) saturate(1.4);
     border-bottom:1px solid rgba(148,163,204,.07);
@@ -98,7 +98,7 @@
     transition:transform .16s cubic-bezier(.3,.8,.4,1.4), box-shadow .2s, filter .15s;
     text-decoration:none;white-space:nowrap;
   }
-  .btn:hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 28px -8px rgba(91,140,255,.65), inset 0 1px 0 rgba(255,255,255,.22)}
+  .btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
   .btn:active{transform:translateY(0) scale(.985)}
   .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
   .btn:focus-visible{outline:none;box-shadow:var(--ring)}
@@ -106,46 +106,100 @@
     background:var(--surface-2);border:1px solid var(--border-hi);color:var(--text);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
   }
-  .btn.secondary:hover{background:var(--surface-3);filter:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .btn.secondary:hover{background:var(--surface-3);filter:none}
   .btn.small{padding:8px 14px;font-size:13px;border-radius:10px}
   .btn.full{width:100%}
   .btn.ghost{background:transparent;border:none;color:var(--text-2);box-shadow:none;padding:8px 10px;font-weight:500}
   .btn.ghost:hover{color:var(--text);filter:none;transform:none;box-shadow:none}
 
-  .hero{text-align:center;padding:52px 0 36px;animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+  /* ===== hero: split layout ===== */
+  .hero{
+    display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;
+    padding:64px 0 30px;animation:rise .6s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .hero-copy{text-align:left}
   .hero-badge{
     display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500;color:var(--text-2);
-    background:var(--surface);border:1px solid var(--border);padding:7px 14px 7px 9px;border-radius:99px;margin-bottom:22px;
+    background:var(--surface);border:1px solid var(--border);padding:7px 14px 7px 9px;border-radius:99px;margin-bottom:24px;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
   }
   .hero-badge .pulse{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(61,220,151,.5);animation:ping 2.2s cubic-bezier(0,0,.2,1) infinite}
   @keyframes ping{0%{box-shadow:0 0 0 0 rgba(61,220,151,.45)}70%{box-shadow:0 0 0 7px rgba(61,220,151,0)}100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}}
   .hero h1{
-    font-family:var(--head);font-size:clamp(34px,6vw,52px);font-weight:700;
-    letter-spacing:-2px;line-height:1.06;margin-bottom:18px;
+    font-family:var(--head);font-size:clamp(36px,4.6vw,58px);font-weight:700;
+    letter-spacing:-2.2px;line-height:1.05;margin-bottom:20px;
   }
   .hero h1 .grad{
     background:linear-gradient(95deg,#8fb0ff 10%,#c0a9ff 50%,#8fb0ff 90%);background-size:200%;
     -webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 7s linear infinite;
   }
   @keyframes shimmer{to{background-position:-200% 0}}
-  .hero p{color:var(--text-2);font-size:16.5px;font-weight:450;max-width:480px;margin:0 auto 28px;line-height:1.66}
-  .hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center}
+  .hero p{color:var(--text-2);font-size:16.5px;font-weight:450;max-width:460px;margin:0 0 30px;line-height:1.68}
+  .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+  /* hero visual: floating mock invoice */
+  .hero-visual{position:relative;display:flex;justify-content:center;padding:16px 0}
+  .mock-card{
+    width:330px;background:var(--surface);border:1px solid var(--border-hi);border-radius:20px;
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.85), 0 0 60px -20px rgba(91,140,255,.25), inset 0 1px 0 rgba(255,255,255,.06);
+    overflow:hidden;transform:rotate(2.5deg);
+    animation:float 7s ease-in-out infinite;
+  }
+  @keyframes float{0%,100%{transform:rotate(2.5deg) translateY(0)}50%{transform:rotate(2.5deg) translateY(-10px)}}
+  .mock-card::before{content:"";position:absolute;top:0;left:14%;right:14%;height:1px;background:linear-gradient(90deg,transparent,rgba(159,184,255,.55),transparent)}
+  .mock-brand{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.014)}
+  .mock-brand .bl{display:flex;align-items:center;gap:8px;font-family:var(--head);font-weight:700;font-size:13px}
+  .mock-brand .bl .logo-dot{width:22px;height:22px;border-radius:7px}
+  .mock-brand .bl .logo-dot svg{width:12px;height:12px}
+  .mock-body{padding:22px 20px 20px}
+  .mock-label{text-align:center;color:var(--text-3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;margin-bottom:6px}
+  .mock-amt{text-align:center;font-family:var(--head);font-size:40px;font-weight:700;letter-spacing:-1.8px;line-height:1}
+  .mock-amt .cur{font-size:14px;color:var(--text-3);font-weight:600;margin-left:5px;vertical-align:11px}
+  .mock-to{margin:18px 0 0;background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+  .mock-to .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#ffb45b,#ff5b8c);flex:none}
+  .mock-to .ad{font-family:var(--mono);font-size:10.5px;color:var(--text-2)}
+  .mock-memo{margin-top:10px;text-align:center;background:var(--accent-soft);border:1px solid rgba(91,140,255,.2);color:#c4d4ff;border-radius:11px;padding:9px 12px;font-size:11.5px}
+  .mock-btn{margin-top:16px;background:linear-gradient(180deg,#6a97ff,#5079f0);border-radius:10px;text-align:center;padding:11px;font-size:13px;font-weight:600;box-shadow:0 8px 20px -8px rgba(91,140,255,.55), inset 0 1px 0 rgba(255,255,255,.22)}
+  .mock-chip{
+    position:absolute;background:#151b2b;border:1px solid var(--border-hi);border-radius:12px;
+    padding:10px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px;
+    box-shadow:0 16px 40px -12px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .mock-chip.c1{top:8%;right:2%;animation:float2 6s .5s ease-in-out infinite}
+  .mock-chip.c2{bottom:10%;left:0%;animation:float2 7s 1s ease-in-out infinite}
+  .mock-chip .g{color:var(--green)}
+  @keyframes float2{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 
   .stats-band{
     display:grid;grid-template-columns:repeat(3,1fr);
     background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
-    margin:38px 0 34px;overflow:hidden;animation:rise .6s .08s both;
+    margin:34px 0 40px;overflow:hidden;animation:rise .6s .08s both;
     box-shadow:0 20px 50px -25px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.04);
   }
-  .stats-band .cell{padding:22px 14px;text-align:center;border-left:1px solid var(--border)}
+  .stats-band .cell{padding:24px 14px;text-align:center;border-left:1px solid var(--border)}
   .stats-band .cell:first-child{border-left:none}
-  .stats-band .v{font-family:var(--head);font-size:24px;font-weight:700;letter-spacing:-.8px}
+  .stats-band .v{font-family:var(--head);font-size:26px;font-weight:700;letter-spacing:-.8px}
   .stats-band .v .u{font-size:13px;color:var(--text-3);font-weight:600;letter-spacing:0}
   .stats-band .l{color:var(--text-3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-top:6px}
 
   @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  /* ===== main 2-column zone ===== */
+  .main-grid{display:grid;grid-template-columns:1fr 396px;gap:22px;align-items:start}
+  .preview-panel{position:sticky;top:84px;animation:rise .6s .12s both}
+  .preview-title{
+    display:flex;align-items:center;gap:8px;color:var(--text-3);font-size:11.5px;font-weight:600;
+    text-transform:uppercase;letter-spacing:1.2px;margin:2px 0 12px 4px;
+  }
+  .preview-title .live{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite}
+  .preview-card{
+    background:var(--surface);border:1px solid var(--border-hi);border-radius:20px;overflow:hidden;position:relative;
+    box-shadow:0 30px 70px -30px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.05);
+    transition:transform .3s;
+  }
+  .preview-card:hover{transform:translateY(-3px)}
+  .preview-card::before{content:"";position:absolute;top:0;left:14%;right:14%;height:1px;background:linear-gradient(90deg,transparent,rgba(159,184,255,.5),transparent)}
 
   .tabs{
     display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);
@@ -210,10 +264,10 @@
   .qr-info .d{color:var(--text-2);font-size:13px;font-weight:450;line-height:1.6;margin-bottom:13px}
   .row{display:flex;gap:10px;flex-wrap:wrap}
 
-  .how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:10px 0 16px;animation:rise .55s .14s both}
+  .how{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:26px 0 16px;animation:rise .55s .14s both}
   .how .step{
     position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
-    padding:22px 20px;transition:border-color .25s, transform .25s, box-shadow .25s;overflow:hidden;
+    padding:24px 22px;transition:border-color .25s, transform .25s, box-shadow .25s;overflow:hidden;
   }
   .how .step:hover{border-color:var(--border-hi);transform:translateY(-3px);box-shadow:0 18px 40px -20px rgba(0,0,0,.7)}
   .how .step::after{
@@ -248,7 +302,6 @@
   .stat .l{color:var(--text-3);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-top:5px}
   .dash-empty{color:var(--text-2);font-size:14px;text-align:center;padding:28px 0;line-height:1.7}
   .dash-loading{text-align:center;color:var(--text-2);font-size:13.5px;padding:24px 0}
-  @media (max-width:600px){ .dash-stats{grid-template-columns:1fr 1fr} .dash-stats .stat:last-child{grid-column:1/-1} }
 
   .pay-shell{max-width:460px;margin:46px auto 0;animation:rise .55s cubic-bezier(.2,.8,.2,1) both}
   .invoice-card{
@@ -346,7 +399,7 @@
   @keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.95)}to{opacity:1;transform:none}}
   @keyframes toastOut{to{opacity:0;transform:translateY(8px) scale(.97)}}
 
-  .footer{margin-top:48px;animation:fade .8s .3s both}
+  .footer{margin-top:56px;animation:fade .8s .3s both}
   .footer .links{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;padding-bottom:16px;font-size:13px}
   .footer .links a{color:var(--text-2);text-decoration:none;transition:color .15s}
   .footer .links a:hover{color:var(--text)}
@@ -356,6 +409,14 @@
   .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
 
+  @media (max-width:1000px){
+    .main-grid{grid-template-columns:1fr}
+    .preview-panel{display:none}
+    .hero{grid-template-columns:1fr;gap:36px;text-align:center;padding:44px 0 24px}
+    .hero-copy{text-align:center}
+    .hero p{margin:0 auto 28px}
+    .hero-ctas{justify-content:center}
+  }
   @media (max-width:640px){
     .how{grid-template-columns:1fr}
     .card{padding:24px 18px}
@@ -363,7 +424,10 @@
     .stats-band .cell{border-left:none;border-top:1px solid var(--border)}
     .stats-band .cell:first-child{border-top:none}
     .inv-body{padding:26px 18px 24px}
-    .hero{padding:38px 0 28px}
+    .hero-visual{display:none}
+    .dash-stats{grid-template-columns:1fr 1fr}
+    .dash-stats .stat:last-child{grid-column:1/-1}
+    .wrap{padding:0 18px 70px}
   }
 </style>
 </head>
@@ -386,13 +450,31 @@
   <!-- ================= CREATE VIEW ================= -->
   <div id="createView" style="display:none">
     <div class="hero">
-      <div class="hero-badge"><span class="pulse"></span> Live on Arc Testnet — Circle's L1 for money</div>
-      <h1>Payment links for<br/><span class="grad">programmable money.</span></h1>
-      <p>Create a USDC payment link and share it anywhere. One click to pay, settled onchain in under a second — recorded forever by the PayLinq Router contract.</p>
-      <div class="hero-ctas">
-        <a class="btn" href="#create-card">Create a payment link</a>
-        <a class="btn secondary" id="demoBtn" href="#" target="_blank" rel="noopener">Try a demo invoice →</a>
-        <a class="btn ghost" href="https://testnet.arcscan.app/address/0x8e9367F710684EaB28258dbeddd39330eAFD3Bb1" target="_blank" rel="noopener">Verified contract ↗</a>
+      <div class="hero-copy">
+        <div class="hero-badge"><span class="pulse"></span> Live on Arc Testnet — Circle's L1 for money</div>
+        <h1>Payment links for<br/><span class="grad">programmable money.</span></h1>
+        <p>Create a USDC payment link and share it anywhere. One click to pay, settled onchain in under a second — recorded forever by the PayLinq Router contract.</p>
+        <div class="hero-ctas">
+          <a class="btn" href="#create-card">Create a payment link</a>
+          <a class="btn secondary" id="demoBtn" href="#" target="_blank" rel="noopener">Try a demo invoice →</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="mock-card">
+          <div class="mock-brand">
+            <div class="bl"><div class="logo-dot"><svg viewBox="0 0 24 24" fill="none"><path d="M13.5 2 5 13.5h5L9 22l8.5-11.5h-5l1-8.5z" fill="#fff"/></svg></div>PayLinq</div>
+            <span class="net-pill" style="font-size:10px;padding:4px 9px"><span class="cdot"></span> Arc</span>
+          </div>
+          <div class="mock-body">
+            <div class="mock-label">Payment request</div>
+            <div class="mock-amt">128.50<span class="cur">USDC</span></div>
+            <div class="mock-to"><div class="av"></div><div class="ad">0x7f3a…c21d</div></div>
+            <div class="mock-memo">Invoice #014 — brand design</div>
+            <div class="mock-btn">Pay 128.50 USDC</div>
+          </div>
+        </div>
+        <div class="mock-chip c1"><span class="g">⚡</span> Settled in 0.4s</div>
+        <div class="mock-chip c2">🧾 Recorded onchain</div>
       </div>
     </div>
 
@@ -403,95 +485,128 @@
     </div>
     <span id="statsChip" style="display:none"></span>
 
-    <div class="tabs" role="tablist">
-      <button class="tab active" data-tab="create">⚡ Create Link</button>
-      <button class="tab" data-tab="dash">📊 Dashboard</button>
-      <button class="tab" data-tab="history">🕘 Activity</button>
-    </div>
-
-    <div class="card" id="tab-create">
-      <a id="create-card"></a>
-      <h2>New payment link</h2>
-      <div class="sub">Fill in the details — we'll generate a link and QR code you can share.</div>
-
-      <div class="field">
-        <label>Recipient address <span class="opt">where the USDC goes</span></label>
-        <div class="input-wrap">
-          <input id="toInput" class="mono" placeholder="0x…" spellcheck="false" autocomplete="off" />
-          <button class="btn secondary small" id="useMyAddr" title="Use my connected wallet" style="flex:none">Use mine</button>
+    <div class="main-grid">
+      <div class="main-left">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="create">⚡ Create Link</button>
+          <button class="tab" data-tab="dash">📊 Dashboard</button>
+          <button class="tab" data-tab="history">🕘 Activity</button>
         </div>
-        <div class="err-msg" id="toErr">Please enter a valid 0x address.</div>
-      </div>
 
-      <div class="field">
-        <label>Amount</label>
-        <div class="amt-wrap">
-          <input id="amtInput" type="number" min="0" step="0.01" placeholder="10.00" inputmode="decimal" />
-          <span class="amt-suffix"><span class="usdc-ico">$</span>USDC</span>
-        </div>
-        <div class="err-msg" id="amtErr">Enter an amount greater than 0.</div>
-      </div>
+        <div class="card" id="tab-create">
+          <a id="create-card"></a>
+          <h2>New payment link</h2>
+          <div class="sub">Fill in the details — we'll generate a link and QR code you can share.</div>
 
-      <div class="field">
-        <label>Memo <span class="opt">optional — recorded onchain with the payment</span></label>
-        <input id="memoInput" maxlength="120" placeholder="Invoice #001 — design work" autocomplete="off" />
-      </div>
+          <div class="field">
+            <label>Recipient address <span class="opt">where the USDC goes</span></label>
+            <div class="input-wrap">
+              <input id="toInput" class="mono" placeholder="0x…" spellcheck="false" autocomplete="off" />
+              <button class="btn secondary small" id="useMyAddr" title="Use my connected wallet" style="flex:none">Use mine</button>
+            </div>
+            <div class="err-msg" id="toErr">Please enter a valid 0x address.</div>
+          </div>
 
-      <div class="field">
-        <button class="btn full" id="genBtn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13.5 2 5 13.5h5L9 22l8.5-11.5h-5l1-8.5z" fill="#fff"/></svg>
-          Generate payment link
-        </button>
-      </div>
+          <div class="field">
+            <label>Amount</label>
+            <div class="amt-wrap">
+              <input id="amtInput" type="number" min="0" step="0.01" placeholder="10.00" inputmode="decimal" />
+              <span class="amt-suffix"><span class="usdc-ico">$</span>USDC</span>
+            </div>
+            <div class="err-msg" id="amtErr">Enter an amount greater than 0.</div>
+          </div>
 
-      <div class="result" id="result">
-        <div class="result-head">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          Link ready to share
-        </div>
-        <div class="link-pill">
-          <span class="url" id="linkBox"></span>
-          <button class="copy-ico" id="copyBtn" title="Copy link">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2"/></svg>
-          </button>
-        </div>
-        <div class="qr-zone">
-          <div class="qr-frame"><img id="qrImg" alt="Payment QR code" /></div>
-          <div class="qr-info">
-            <div class="t">Scan &amp; pay</div>
-            <div class="d">Anyone who opens this link sees a clean invoice and pays in one click with their wallet.</div>
-            <div class="row">
-              <button class="btn small" id="copyBtn2">Copy link</button>
-              <button class="btn secondary small" id="openBtn">Preview ↗</button>
+          <div class="field">
+            <label>Memo <span class="opt">optional — recorded onchain with the payment</span></label>
+            <input id="memoInput" maxlength="120" placeholder="Invoice #001 — design work" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <button class="btn full" id="genBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13.5 2 5 13.5h5L9 22l8.5-11.5h-5l1-8.5z" fill="#fff"/></svg>
+              Generate payment link
+            </button>
+          </div>
+
+          <div class="result" id="result">
+            <div class="result-head">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              Link ready to share
+            </div>
+            <div class="link-pill">
+              <span class="url" id="linkBox"></span>
+              <button class="copy-ico" id="copyBtn" title="Copy link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2"/></svg>
+              </button>
+            </div>
+            <div class="qr-zone">
+              <div class="qr-frame"><img id="qrImg" alt="Payment QR code" /></div>
+              <div class="qr-info">
+                <div class="t">Scan &amp; pay</div>
+                <div class="d">Anyone who opens this link sees a clean invoice and pays in one click with their wallet.</div>
+                <div class="row">
+                  <button class="btn small" id="copyBtn2">Copy link</button>
+                  <button class="btn secondary small" id="openBtn">Preview ↗</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="card" id="tab-dash" style="display:none">
-      <h2>Merchant dashboard</h2>
-      <div class="sub">Payments received by your wallet — read live from the Router contract, straight from the blockchain.</div>
-      <div id="dashConnect" style="text-align:center;padding:24px 0">
-        <button class="btn" id="dashConnectBtn">Connect wallet to view</button>
-      </div>
-      <div id="dashBody" style="display:none">
-        <div class="dash-stats">
-          <div class="stat"><div class="v" id="dashTotal">—</div><div class="l">USDC received</div></div>
-          <div class="stat"><div class="v" id="dashCount">—</div><div class="l">Payments</div></div>
-          <div class="stat"><div class="v" id="dashLast">—</div><div class="l">Last payment</div></div>
+        <div class="card" id="tab-dash" style="display:none">
+          <h2>Merchant dashboard</h2>
+          <div class="sub">Payments received by your wallet — read live from the Router contract, straight from the blockchain.</div>
+          <div id="dashConnect" style="text-align:center;padding:24px 0">
+            <button class="btn" id="dashConnectBtn">Connect wallet to view</button>
+          </div>
+          <div id="dashBody" style="display:none">
+            <div class="dash-stats">
+              <div class="stat"><div class="v" id="dashTotal">—</div><div class="l">USDC received</div></div>
+              <div class="stat"><div class="v" id="dashCount">—</div><div class="l">Payments</div></div>
+              <div class="stat"><div class="v" id="dashLast">—</div><div class="l">Last payment</div></div>
+            </div>
+            <div id="dashList"></div>
+            <div style="text-align:center;margin-top:14px">
+              <button class="btn secondary small" id="dashRefresh">↻ Refresh</button>
+            </div>
+          </div>
         </div>
-        <div id="dashList"></div>
-        <div style="text-align:center;margin-top:14px">
-          <button class="btn secondary small" id="dashRefresh">↻ Refresh</button>
-        </div>
-      </div>
-    </div>
 
-    <div class="card" id="tab-history" style="display:none">
-      <h2>Activity</h2>
-      <div class="sub">Links you've created and payments you've sent — stored only in your browser.</div>
-      <div id="historyList"></div>
+        <div class="card" id="tab-history" style="display:none">
+          <h2>Activity</h2>
+          <div class="sub">Links you've created and payments you've sent — stored only in your browser.</div>
+          <div id="historyList"></div>
+        </div>
+      </div>
+
+      <aside class="preview-panel">
+        <div class="preview-title"><span class="live"></span> Live preview — what the payer sees</div>
+        <div class="preview-card">
+          <div class="inv-brand">
+            <div class="b-left">
+              <div class="logo-dot"><svg viewBox="0 0 24 24" fill="none"><path d="M13.5 2 5 13.5h5L9 22l8.5-11.5h-5l1-8.5z" fill="#fff"/></svg></div>
+              PayLinq
+            </div>
+            <span class="net-pill"><span class="cdot"></span> Arc Testnet</span>
+          </div>
+          <div class="inv-body" style="padding:26px 22px 24px">
+            <div class="inv-label">Payment request</div>
+            <div class="inv-amount" style="font-size:42px" id="pvAmount">25.00<span class="cur">USDC</span></div>
+            <div class="inv-to">
+              <div class="addr-avatar" id="pvAvatar" style="background:linear-gradient(135deg,#5b8cff,#8b5cf6)"></div>
+              <div class="col">
+                <div class="lab">Pay to</div>
+                <div class="adr" id="pvTo">0x1a2b…9f3c</div>
+              </div>
+            </div>
+            <div class="inv-memo" id="pvMemo">Invoice #001 — design work</div>
+            <div class="pay-zone" style="margin-top:20px">
+              <div class="btn full" style="pointer-events:none">Pay <span id="pvBtnAmt">25.00</span> USDC</div>
+            </div>
+          </div>
+          <div class="inv-foot">Settles in &lt;1s · Secured by PayLinqRouter</div>
+        </div>
+      </aside>
     </div>
 
     <div class="how">
@@ -725,19 +840,27 @@ function renderHistory() {
 }
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
-/* ---------- onchain stats (from Router) ---------- */
+/* ---------- onchain stats (RPC first, ArcScan API fallback) ---------- */
 async function loadStats() {
   try {
     const router = new ethers.Contract(ARC.router, ROUTER_ABI, readProvider());
     const [count, volume] = await Promise.all([router.totalPayments(), router.totalVolume()]);
-    const vol = Number(ethers.formatUnits(volume, 18));
-    $("bandPayments").textContent = count.toString();
-    $("bandVolume").textContent = "$" + vol.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    setBand(count.toString(), Number(ethers.formatUnits(volume, 18)));
   } catch (e) {
-    $("bandPayments").textContent = "–";
-    $("bandVolume").textContent = "–";
-    console.warn("stats unavailable", e);
+    console.warn("stats via RPC failed, trying ArcScan API", e);
+    try {
+      const all = await fetchRouterEvents();
+      let v = 0n; all.forEach(x => { v += x.amount; });
+      setBand(String(all.length), Number(ethers.formatUnits(v, 18)));
+    } catch (e2) {
+      $("bandPayments").textContent = "–";
+      $("bandVolume").textContent = "–";
+    }
   }
+}
+function setBand(count, vol) {
+  $("bandPayments").textContent = count;
+  $("bandVolume").textContent = "$" + vol.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
 /* ---------- read PaymentSent events via ArcScan API (no RPC log-range limits) ---------- */
@@ -845,7 +968,7 @@ function initCreate() {
 
   $("useMyAddr").onclick = async () => {
     if (!account) { const ok = await connect().catch(() => false); if (!ok) return; }
-    if (account) { $("toInput").value = account; validateTo(); }
+    if (account) { $("toInput").value = account; validateTo(); updatePreview(); }
   };
 
   const validateTo = () => {
@@ -861,8 +984,30 @@ function initCreate() {
     $("amtErr").classList.toggle("show", !ok && v.length > 0);
     return ok;
   };
+
+  /* live preview binding */
+  const updatePreview = () => {
+    if (!$("pvAmount")) return;
+    const amt = $("amtInput").value.trim();
+    const to = $("toInput").value.trim();
+    const memo = $("memoInput").value.trim();
+    const showAmt = (amt && !isNaN(amt) && Number(amt) > 0) ? fmt(amt) : "25.00";
+    $("pvAmount").innerHTML = `${showAmt}<span class="cur">USDC</span>`;
+    $("pvBtnAmt").textContent = showAmt;
+    if (ethers.isAddress(to)) {
+      $("pvTo").textContent = short(to);
+      $("pvAvatar").style.background = addrGradient(to);
+    } else {
+      $("pvTo").textContent = "0x1a2b…9f3c";
+      $("pvAvatar").style.background = "linear-gradient(135deg,#5b8cff,#8b5cf6)";
+    }
+    $("pvMemo").textContent = memo || "Invoice #001 — design work";
+    $("pvMemo").style.opacity = memo ? "1" : ".55";
+  };
+  ["toInput", "amtInput", "memoInput"].forEach(id => $(id).addEventListener("input", () => { updatePreview(); }));
   $("toInput").addEventListener("input", validateTo);
   $("amtInput").addEventListener("input", validateAmt);
+  updatePreview();
 
   $("genBtn").onclick = () => {
     const to = $("toInput").value.trim();
